@@ -1,0 +1,26 @@
+package com.chargeroute.app.domain.repository
+
+import com.chargeroute.app.domain.model.LocationPoint
+import com.chargeroute.app.domain.model.RoutePlan
+import com.chargeroute.app.domain.model.Station
+import com.chargeroute.app.domain.model.Vehicle
+import kotlinx.coroutines.flow.Flow
+
+interface RouteRepository {
+    suspend fun calculateRoute(
+        origin: LocationPoint,
+        destination: LocationPoint,
+        vehicle: Vehicle,
+        initialBatteryPercent: Int,
+        acActive: Boolean
+    ): Result<RoutePlan>
+
+    suspend fun getStationsAlongRoute(
+        polyline: List<Pair<Double, Double>>,
+        vehicle: Vehicle
+    ): List<Station>
+
+    fun getOfflineRoute(tripId: String): Flow<RoutePlan?>
+
+    suspend fun saveRoutePlan(tripId: String, plan: RoutePlan)
+}
