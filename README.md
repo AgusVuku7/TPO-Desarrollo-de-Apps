@@ -6,8 +6,7 @@
 > **Integrantes:**  
 > • Vukusic Agustín — L.U: 1171288  
 > • Aliano Juan Ignacio — L.U: 1141973  
-> • Tomás Goncevatt Miranda — L.U: 1091465  
-> **Repositorio oficial:** [https://github.com/ignaj2002/Desarrollo-de-Apps-1](https://github.com/ignaj2002/Desarrollo-de-Apps-1)
+> • Tomás Goncevatt Miranda — L.U: 1091465
 
 ---
 
