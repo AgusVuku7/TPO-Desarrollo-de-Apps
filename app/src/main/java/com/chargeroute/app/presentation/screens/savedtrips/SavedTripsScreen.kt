@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,18 +47,27 @@ import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.domain.model.Trip
 import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class SavedTripsViewModel(
-    tripRepository: TripRepository
+    private val tripRepository: TripRepository
 ) : ViewModel() {
-    val savedTrips: StateFlow<List<Trip>> = tripRepository.getSavedTrips()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _savedTrips = MutableStateFlow<List<Trip>>(emptyList())
+    val savedTrips: StateFlow<List<Trip>> = _savedTrips.asStateFlow()
+
+    // Se vuelve a leer cada vez que se abre el historial, asi aparecen los viajes nuevos
+    fun refresh() {
+        viewModelScope.launch {
+            _savedTrips.value = tripRepository.getSavedTrips().firstOrNull() ?: emptyList()
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,12 +79,16 @@ fun SavedTripsScreen(
 ) {
     val trips by viewModel.savedTrips.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Mis viajes guardados",
+                        text = "Historial de viajes",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -143,7 +157,10 @@ fun SavedTripsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     Icon(
                                         imageVector = Icons.Default.LocationOn,
                                         contentDescription = null,
@@ -157,6 +174,7 @@ fun SavedTripsScreen(
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
+                                Spacer(modifier = Modifier.width(8.dp))
 
                                 val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                                     .format(Date(trip.createdAtMillis))
@@ -177,7 +195,8 @@ fun SavedTripsScreen(
                                 Text(
                                     text = "${trip.vehicle.displayName} • ${trip.routePlan.distanceKm.toInt()} km",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f)
                                 )
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -304,4 +304,31 @@ class ActiveNavigationBatteryTest {
         assertEquals(100, state.trip?.initialBatteryPercent)
         assertEquals(100, state.trip?.currentBatteryPercent)
     }
+
+    @Test
+    fun simulation_stopsAtCharger_andContinuesOnlyWhenPressedAgain() = runTest(testDispatcher) {
+        fakeRepository.saveTrip(createSampleTrip(id = "trip_stop"))
+        viewModel.loadTrip("trip_stop")
+        advanceUntilIdle()
+
+        // Primer "Simular viaje": tiene que frenar en el cargador y quedarse ahi
+        viewModel.toggleSimulation()
+        advanceUntilIdle()
+
+        val atCharger = viewModel.uiState.value
+        assertFalse("La simulación debe frenar en el cargador", atCharger.isSimulationPlaying)
+        assertTrue(atCharger.isCharging)
+        assertEquals(atCharger.stopProgress!!, atCharger.progress, 0.0001f)
+        assertEquals("Batería planificada al salir del cargador", 80, atCharger.currentBatteryPercent)
+        assertEquals(0, atCharger.currentSpeedKmH)
+        assertFalse(atCharger.isArrived)
+
+        // Segundo "Simular viaje": sigue hasta el destino
+        viewModel.toggleSimulation()
+        advanceUntilIdle()
+
+        val atDestination = viewModel.uiState.value
+        assertTrue(atDestination.isArrived)
+        assertFalse(atDestination.isCharging)
+    }
 }

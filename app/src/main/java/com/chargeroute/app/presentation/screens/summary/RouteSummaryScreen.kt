@@ -200,18 +200,25 @@ fun RouteSummaryScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = trip.destination.name,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
+                                // Direccion que encontro el mapa, para confirmar que es la correcta
                                 Text(
-                                    text = "${trip.destination.name} • llegada ${plan.arrivalTime}",
+                                    text = trip.destination.address,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "Llegada ${plan.arrivalTime}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+                            Spacer(modifier = Modifier.width(8.dp))
                             // Badge: "1 carga"
                             Row(
                                 modifier = Modifier
@@ -299,6 +306,29 @@ fun RouteSummaryScreen(
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
+
+                // Aviso si con lo planificado no se llega con carga suficiente
+                if (plan.arrivalBatteryPercent < 10) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFEF4444).copy(alpha = 0.12f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 14.dp)
+                    ) {
+                        Text(
+                            text = if (plan.stops.isEmpty()) {
+                                "Atención: con esta batería no llegás con reserva y no tenemos cargadores cerca de esta ruta."
+                            } else {
+                                "Atención: con una sola parada no llegás con reserva. Este viaje necesitaría más cargas."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFB91C1C),
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
 
                 // Planned Stops List
                 Text(
