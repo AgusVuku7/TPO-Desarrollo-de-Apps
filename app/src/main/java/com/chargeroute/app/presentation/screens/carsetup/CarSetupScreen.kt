@@ -86,6 +86,8 @@ fun CarSetupScreen(
 ) {
     val selected = state.selectedVehicle ?: return
     var vehicleMenuExpanded by remember { mutableStateOf(false) }
+    var menuBrand by remember { mutableStateOf<String?>(null) }
+    val brands = state.availableVehicles.map { it.brand }.distinct().sortedBy { it.lowercase() }
     val focusManager = LocalFocusManager.current
 
     Scaffold(
@@ -188,81 +190,72 @@ fun CarSetupScreen(
                 modifier = Modifier.padding(bottom = 6.dp)
             )
 
+            // Un solo cuadro: primero se elige la marca y despues el modelo en la misma lista
             Box {
-                TouchAccessibleCard(
-                    onClick = { vehicleMenuExpanded = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(BrandPrimary.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.DirectionsCar,
-                                    contentDescription = null,
-                                    tint = BrandPrimary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "${selected.brand} ${selected.model}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "${selected.year} • ${selected.version}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Text(
-                            text = "Cambiar",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = BrandPrimary
-                        )
+                VehicleSelectorBox(
+                    label = "Vehículo",
+                    value = "${selected.brand} ${selected.model}",
+                    subtitle = "${selected.year} • ${selected.version}",
+                    onClick = {
+                        menuBrand = null
+                        vehicleMenuExpanded = true
                     }
-                }
+                )
 
                 DropdownMenu(
                     expanded = vehicleMenuExpanded,
                     onDismissRequest = { vehicleMenuExpanded = false }
                 ) {
-                    state.availableVehicles.forEach { vehicle ->
+                    val brandInMenu = menuBrand
+                    if (brandInMenu == null) {
+                        // Paso 1: marcas
+                        brands.forEach { brand ->
+                            DropdownMenuItem(
+                                text = { Text(text = brand, fontWeight = FontWeight.Bold) },
+                                trailingIcon = {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                onClick = { menuBrand = brand }
+                            )
+                        }
+                    } else {
+                        // Paso 2: modelos de esa marca
                         DropdownMenuItem(
-                            text = {
-                                Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                                    Text(
-                                        text = "${vehicle.brand} ${vehicle.model}",
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "${vehicle.version} • ${vehicle.usableBatteryKwh} kWh útil • WLTP ${vehicle.wltpRangeKm.toInt()} km",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                            text = { Text(text = brandInMenu, fontWeight = FontWeight.Bold, color = BrandPrimary) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Volver a las marcas",
+                                    tint = BrandPrimary
+                                )
                             },
-                            onClick = {
-                                onVehicleSelected(vehicle)
-                                vehicleMenuExpanded = false
-                            }
+                            onClick = { menuBrand = null }
                         )
+                        state.availableVehicles.filter { it.brand == brandInMenu }.forEach { vehicle ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                        Text(
+                                            text = vehicle.model,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "${vehicle.version} • ${vehicle.wltpRangeKm.toInt()} km declarados • ${vehicle.baseConsumptionKwhPer100Km} kWh/100 km",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    onVehicleSelected(vehicle)
+                                    vehicleMenuExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -532,8 +525,9 @@ fun CarSetupScreen(
                                 value = textInput,
                                 onValueChange = { newVal ->
                                     val digitsOnly = newVal.filter { it.isDigit() }.take(3)
-                                    textInput = digitsOnly
                                     val parsed = digitsOnly.toIntOrNull()
+                                    // Nunca se puede escribir mas de 100%
+                                    textInput = if (parsed != null && parsed > 100) "100" else digitsOnly
                                     if (parsed != null) {
                                         onBatteryChanged(parsed.coerceIn(5, 100))
                                     }
@@ -609,6 +603,74 @@ fun CarSetupScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun VehicleSelectorBox(
+    label: String,
+    value: String,
+    subtitle: String?,
+    onClick: () -> Unit
+) {
+    TouchAccessibleCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(BrandPrimary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DirectionsCar,
+                        contentDescription = null,
+                        tint = BrandPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    subtitle?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            Text(
+                text = "Cambiar",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = BrandPrimary
+            )
         }
     }
 }

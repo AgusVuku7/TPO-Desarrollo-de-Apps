@@ -15,5 +15,6 @@ data class RoutePlan(
     val departureTime: String = "09:41",
     val arrivalTime: String = "15:26",
     val isLowBatteryWarning: Boolean = false,
-    val warningMessage: String? = null
+    val warningMessage: String? = null,
+    val isApproximate: Boolean = false // true si no se pudo consultar el camino real
 )

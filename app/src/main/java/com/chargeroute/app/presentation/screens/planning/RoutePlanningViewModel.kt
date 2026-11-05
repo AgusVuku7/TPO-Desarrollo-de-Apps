@@ -8,12 +8,16 @@ import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Trip
 import com.chargeroute.app.domain.model.Vehicle
+import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.domain.usecase.CalculateRouteUseCase
+import com.chargeroute.app.domain.usecase.GeocodeAddressUseCase
 import com.chargeroute.app.domain.usecase.GetOfflineRouteUseCase
 import com.chargeroute.app.domain.usecase.SaveTripUseCase
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -47,7 +51,10 @@ data class RoutePlanningUiState(
     val errorMessage: String? = null,
     val infoNotice: String? = null,
     val isOffline: Boolean = false,
-    val createdTripId: String? = null
+    val createdTripId: String? = null,
+    val recentTrips: List<Trip> = emptyList(),
+    val addressOptions: List<LocationPoint> = emptyList(),
+    val optionsAreForOrigin: Boolean = true
 )
 
 class RoutePlanningViewModel(
@@ -55,7 +62,9 @@ class RoutePlanningViewModel(
     private val saveTripUseCase: SaveTripUseCase,
     private val getOfflineRouteUseCase: GetOfflineRouteUseCase,
     private val locationClient: LocationClient,
-    private val networkObserver: NetworkConnectivityObserver
+    private val networkObserver: NetworkConnectivityObserver,
+    private val geocodeAddressUseCase: GeocodeAddressUseCase,
+    private val tripRepository: TripRepository
 ) : ViewModel() {
 
     // Diccionario de ciudades argentinas para autocompletado y geocodificación precisa
@@ -77,6 +86,136 @@ class RoutePlanningViewModel(
 
     init {
         checkNetwork()
+        loadRecentTrips()
+    }
+
+    // Ultimos destinos distintos, del mas nuevo al mas viejo
+    fun loadRecentTrips() {
+        viewModelScope.launch {
+            val trips = tripRepository.getSavedTrips().firstOrNull() ?: emptyList()
+            _uiState.update {
+                it.copy(recentTrips = trips.distinctBy { trip -> trip.destination.name }.take(5))
+            }
+        }
+    }
+
+    fun selectRecentDestination(trip: Trip) {
+        _uiState.update {
+            it.copy(
+                destination = trip.destination,
+                destinationInputText = trip.destination.name,
+                calculatedPlan = null,
+                errorMessage = null
+            )
+        }
+        previewRoute()
+    }
+
+    /**
+     * Busca las coordenadas de lo que escribio el usuario.
+     * Si ya estan buscadas (ciudad conocida, GPS o busqueda anterior) no vuelve a consultar.
+     */
+    private suspend fun resolvePoint(text: String, current: LocationPoint): List<LocationPoint> {
+        val cleanText = text.trim()
+        if (current.name == cleanText && current.address != CUSTOM_ADDRESS) {
+            return listOf(current)
+        }
+        return geocodeAddressUseCase(cleanText)
+    }
+
+    // Una sola coincidencia se usa directo. Si hay varias, el usuario elige cual es.
+    private fun pickResult(results: List<LocationPoint>, text: String, isOrigin: Boolean): LocationPoint? {
+        if (results.isEmpty()) {
+            _uiState.update {
+                it.copy(isLoading = false, errorMessage = "No encontramos \"$text\". Probá agregando la ciudad.")
+            }
+            return null
+        }
+        if (results.size > 1) {
+            _uiState.update {
+                it.copy(isLoading = false, addressOptions = results, optionsAreForOrigin = isOrigin)
+            }
+            return null
+        }
+        return results.first()
+    }
+
+    fun selectAddressOption(point: LocationPoint) {
+        _uiState.update {
+            if (it.optionsAreForOrigin) {
+                it.copy(origin = point, addressOptions = emptyList())
+            } else {
+                it.copy(destination = point, addressOptions = emptyList())
+            }
+        }
+        previewRoute()
+    }
+
+    private fun needsSearch(text: String, current: LocationPoint): Boolean {
+        return current.name != text.trim() || current.address == CUSTOM_ADDRESS
+    }
+
+    // Devuelve origen y destino con coordenadas reales, o null si alguno no se encontro
+    private suspend fun resolveOriginAndDestination(): Pair<LocationPoint, LocationPoint>? {
+        val state = _uiState.value
+        if (state.originInputText.isBlank() || state.destinationInputText.isBlank()) {
+            _uiState.update { it.copy(isLoading = false, errorMessage = "Ingresá origen y destino.") }
+            return null
+        }
+
+        try {
+            val origin = pickResult(resolvePoint(state.originInputText, state.origin), state.originInputText, true)
+                ?: return null
+            _uiState.update { it.copy(origin = origin) }
+
+            // Nominatim pide no hacer mas de una consulta por segundo
+            if (needsSearch(state.originInputText, state.origin) && needsSearch(state.destinationInputText, state.destination)) {
+                delay(1100)
+            }
+
+            val destination = pickResult(resolvePoint(state.destinationInputText, state.destination), state.destinationInputText, false)
+                ?: return null
+
+            _uiState.update { it.copy(destination = destination) }
+            return Pair(origin, destination)
+        } catch (_: Exception) {
+            _uiState.update {
+                it.copy(isLoading = false, errorMessage = "No se pudo buscar la dirección. Revisá tu conexión.")
+            }
+            return null
+        }
+    }
+
+    /**
+     * Calcula la ruta para la vista previa del mapa, sin guardar el viaje.
+     */
+    fun previewRoute() {
+        val vehicle = _uiState.value.vehicle ?: return
+        val originText = _uiState.value.originInputText
+        val destinationText = _uiState.value.destinationInputText
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+        viewModelScope.launch {
+            val points = resolveOriginAndDestination() ?: return@launch
+            val state = _uiState.value
+            val result = calculateRouteUseCase(
+                origin = points.first,
+                destination = points.second,
+                vehicle = vehicle,
+                initialBatteryPercent = state.initialBatteryPercent,
+                acActive = state.acActive
+            )
+            // Si mientras tanto cambio lo escrito, este resultado ya no sirve
+            val stillValid = _uiState.value.originInputText == originText &&
+                    _uiState.value.destinationInputText == destinationText
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    calculatedPlan = if (stillValid) result.getOrNull() else null,
+                    errorMessage = result.exceptionOrNull()?.let { err -> "Error al calcular ruta: ${err.localizedMessage}" }
+                )
+            }
+        }
     }
 
     private fun checkNetwork() {
@@ -86,10 +225,13 @@ class RoutePlanningViewModel(
 
     fun initParams(vehicle: Vehicle, batteryPercent: Int, acActive: Boolean) {
         _uiState.update {
+            // Si cambio el auto o la bateria, las paradas de la vista previa ya no sirven
+            val changed = it.vehicle != vehicle || it.initialBatteryPercent != batteryPercent || it.acActive != acActive
             it.copy(
                 vehicle = vehicle,
                 initialBatteryPercent = batteryPercent,
-                acActive = acActive
+                acActive = acActive,
+                calculatedPlan = if (changed) null else it.calculatedPlan
             )
         }
     }
@@ -115,7 +257,7 @@ class RoutePlanningViewModel(
     }
 
     fun updateOriginInput(text: String) {
-        _uiState.update { it.copy(originInputText = text) }
+        _uiState.update { it.copy(originInputText = text, calculatedPlan = null, addressOptions = emptyList()) }
         // Match against known cities or custom geocode
         val matched = argentineCities.firstOrNull { it.name.contains(text, ignoreCase = true) }
         if (matched != null) {
@@ -124,13 +266,13 @@ class RoutePlanningViewModel(
             }
         } else {
             _uiState.update {
-                it.copy(origin = it.origin.copy(name = text, address = "Ubicación personalizada"))
+                it.copy(origin = it.origin.copy(name = text, address = CUSTOM_ADDRESS))
             }
         }
     }
 
     fun updateDestinationInput(text: String) {
-        _uiState.update { it.copy(destinationInputText = text) }
+        _uiState.update { it.copy(destinationInputText = text, calculatedPlan = null, addressOptions = emptyList()) }
         val matched = argentineCities.firstOrNull { it.name.contains(text, ignoreCase = true) }
         if (matched != null) {
             _uiState.update {
@@ -138,7 +280,7 @@ class RoutePlanningViewModel(
             }
         } else {
             _uiState.update {
-                it.copy(destination = it.destination.copy(name = text, address = "Ubicación personalizada"))
+                it.copy(destination = it.destination.copy(name = text, address = CUSTOM_ADDRESS))
             }
         }
     }
@@ -149,7 +291,8 @@ class RoutePlanningViewModel(
                 origin = it.destination,
                 destination = it.origin,
                 originInputText = it.destinationInputText,
-                destinationInputText = it.originInputText
+                destinationInputText = it.originInputText,
+                calculatedPlan = null
             )
         }
     }
@@ -178,6 +321,7 @@ class RoutePlanningViewModel(
                         it.copy(
                             origin = point,
                             originInputText = point.name,
+                            calculatedPlan = null,
                             infoNotice = "Ubicación GPS obtenida con éxito."
                         )
                     }
@@ -189,6 +333,7 @@ class RoutePlanningViewModel(
                         it.copy(
                             origin = LocationPoint(obelisco.name, obelisco.address, obelisco.latitude, obelisco.longitude),
                             originInputText = obelisco.name,
+                            calculatedPlan = null,
                             infoNotice = "Emulador detectado con GPS de EE.UU. Se fijó el origen en Buenos Aires (Obelisco) para calcular distancias viales reales en Argentina."
                         )
                     }
@@ -208,9 +353,14 @@ class RoutePlanningViewModel(
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
+            // Primero se buscan las direcciones que escribio el usuario
+            val points = resolveOriginAndDestination() ?: return@launch
+            val origin = points.first
+            val destination = points.second
+
             val result = calculateRouteUseCase(
-                origin = currentState.origin,
-                destination = currentState.destination,
+                origin = origin,
+                destination = destination,
                 vehicle = vehicle,
                 initialBatteryPercent = currentState.initialBatteryPercent,
                 acActive = currentState.acActive
@@ -220,8 +370,8 @@ class RoutePlanningViewModel(
                 val tripId = "trip_${System.currentTimeMillis()}"
                 val trip = Trip(
                     id = tripId,
-                    origin = currentState.origin,
-                    destination = currentState.destination,
+                    origin = origin,
+                    destination = destination,
                     vehicle = vehicle,
                     initialBatteryPercent = currentState.initialBatteryPercent,
                     currentBatteryPercent = currentState.initialBatteryPercent,
@@ -239,6 +389,7 @@ class RoutePlanningViewModel(
                         errorMessage = null
                     )
                 }
+                loadRecentTrips()
                 onSuccess(tripId)
             }.onFailure { err ->
                 _uiState.update {
@@ -249,5 +400,9 @@ class RoutePlanningViewModel(
                 }
             }
         }
+    }
+
+    companion object {
+        private const val CUSTOM_ADDRESS = "Ubicación personalizada"
     }
 }
