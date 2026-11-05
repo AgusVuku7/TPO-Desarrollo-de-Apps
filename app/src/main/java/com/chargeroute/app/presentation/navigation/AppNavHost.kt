@@ -7,6 +7,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -57,7 +58,9 @@ fun AppNavHost(
             container.saveTripUseCase,
             container.getOfflineRouteUseCase,
             container.locationClient,
-            container.networkObserver
+            container.networkObserver,
+            container.geocodeAddressUseCase,
+            container.tripRepository
         )
     }
 
@@ -71,7 +74,9 @@ fun AppNavHost(
     val activeNavigationViewModel: ActiveNavigationViewModel = viewModel {
         ActiveNavigationViewModel(
             container.tripRepository,
-            container.updateBatteryUseCase
+            container.updateBatteryUseCase,
+            container.locationClient,
+            container.getNavigationStepsUseCase
         )
     }
 
@@ -161,11 +166,11 @@ fun AppNavHost(
                     val state by routePlanningViewModel.uiState.collectAsState()
                     RoutePlanningScreen(
                         state = state,
-                        cities = routePlanningViewModel.argentineCities,
                         onOriginTextChange = { routePlanningViewModel.updateOriginInput(it) },
                         onDestinationTextChange = { routePlanningViewModel.updateDestinationInput(it) },
-                        onSelectOriginCity = { routePlanningViewModel.setOriginCity(it) },
-                        onSelectDestinationCity = { routePlanningViewModel.setDestinationCity(it) },
+                        onPreviewClick = { routePlanningViewModel.previewRoute() },
+                        onRecentDestinationClick = { routePlanningViewModel.selectRecentDestination(it) },
+                        onAddressOptionClick = { routePlanningViewModel.selectAddressOption(it) },
                         onSwapClick = { routePlanningViewModel.swapOriginDestination() },
                         onGpsClick = { routePlanningViewModel.useCurrentLocationAsOrigin() },
                         onCalculateClick = {
@@ -187,7 +192,10 @@ fun AppNavHost(
                     arguments = listOf(navArgument("tripId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
-                    routeSummaryViewModel.loadTrip(tripId)
+                    // Solo una vez: llamarlo directo recargaba la pantalla (y el mapa) todo el tiempo
+                    LaunchedEffect(tripId) {
+                        routeSummaryViewModel.loadTrip(tripId)
+                    }
                     val state by routeSummaryViewModel.uiState.collectAsState()
 
                     RouteSummaryScreen(
@@ -251,8 +259,12 @@ fun AppNavHost(
                         onToggleSimulation = {
                             activeNavigationViewModel.toggleSimulation()
                         },
-                        onSimulateAdvance = {
-                            activeNavigationViewModel.advanceProgress(0.15f)
+                        onToggleGps = {
+                            activeNavigationViewModel.toggleGpsTracking()
+                        },
+                        onLeaveScreen = {
+                            activeNavigationViewModel.stopSimulation()
+                            activeNavigationViewModel.stopGpsTracking()
                         },
                         onArrival = {
                             navController.navigate(Screen.Arrival.createRoute(tripId))

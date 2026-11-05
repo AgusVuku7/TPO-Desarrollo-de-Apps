@@ -1,7 +1,6 @@
 package com.chargeroute.app.presentation.screens.planning
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,9 +18,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
@@ -31,9 +31,9 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,9 +42,15 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +61,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BrandPrimary
+import com.chargeroute.app.domain.model.LocationPoint
+import com.chargeroute.app.domain.model.Trip
 import com.chargeroute.app.presentation.components.ErrorRetryBanner
 import com.chargeroute.app.presentation.components.OfflineIndicatorBadge
 import com.chargeroute.app.presentation.components.RouteMapView
@@ -65,17 +73,26 @@ import com.chargeroute.app.presentation.components.TouchAccessibleCard
 @Composable
 fun RoutePlanningScreen(
     state: RoutePlanningUiState,
-    cities: List<ArgentineCity>,
     onOriginTextChange: (String) -> Unit,
     onDestinationTextChange: (String) -> Unit,
-    onSelectOriginCity: (ArgentineCity) -> Unit,
-    onSelectDestinationCity: (ArgentineCity) -> Unit,
     onSwapClick: () -> Unit,
     onGpsClick: () -> Unit,
     onCalculateClick: () -> Unit,
+    onPreviewClick: () -> Unit,
+    onRecentDestinationClick: (Trip) -> Unit,
+    onAddressOptionClick: (LocationPoint) -> Unit,
     onBackClick: () -> Unit,
     onOpenSavedRoute: () -> Unit
 ) {
+    var destinationMenuExpanded by remember { mutableStateOf(false) }
+
+    // Al entrar se muestra la vista previa con las paradas
+    LaunchedEffect(Unit) {
+        if (state.calculatedPlan == null) {
+            onPreviewClick()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -253,7 +270,7 @@ fun RoutePlanningScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Ingresá origen y destino o elegí una de las ciudades sugeridas.",
+                text = "Ingresá cualquier dirección. Si hay calles iguales en otras ciudades, agregá la ciudad.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -294,7 +311,7 @@ fun RoutePlanningScreen(
                                 )
                             }
                         },
-                        placeholder = { Text("Ej: Buenos Aires, Obelisco") },
+                        placeholder = { Text("Ej: Del Comercio 988, CABA") },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = BrandPrimary,
@@ -347,25 +364,87 @@ fun RoutePlanningScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = state.destinationInputText,
-                        onValueChange = onDestinationTextChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = Color(0xFFEF4444),
-                                modifier = Modifier.size(18.dp)
+                    Box {
+                        OutlinedTextField(
+                            value = state.destinationInputText,
+                            onValueChange = onDestinationTextChange,
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = Color(0xFFEF4444),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { destinationMenuExpanded = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Ver últimos destinos",
+                                        tint = BrandPrimary
+                                    )
+                                }
+                            },
+                            placeholder = { Text("Ej: Güemes 2800, Mar del Plata") },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = BrandPrimary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                             )
-                        },
-                        placeholder = { Text("Ej: Mar del Plata, Dolores, Pinamar") },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BrandPrimary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                         )
-                    )
+
+                        // Desplegable con los últimos destinos y el historial
+                        DropdownMenu(
+                            expanded = destinationMenuExpanded,
+                            onDismissRequest = { destinationMenuExpanded = false }
+                        ) {
+                            if (state.recentTrips.isEmpty()) {
+                                DropdownMenuItem(
+                                    text = { Text("Todavía no calculaste ningún viaje.") },
+                                    enabled = false,
+                                    onClick = {}
+                                )
+                            }
+                            state.recentTrips.forEach { trip ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(
+                                                text = trip.destination.name,
+                                                fontWeight = FontWeight.Bold,
+                                                maxLines = 1
+                                            )
+                                            Text(
+                                                text = trip.destination.address,
+                                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.History,
+                                            contentDescription = null,
+                                            tint = BrandPrimary
+                                        )
+                                    },
+                                    onClick = {
+                                        destinationMenuExpanded = false
+                                        onRecentDestinationClick(trip)
+                                    }
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text("Ver historial", fontWeight = FontWeight.Bold, color = BrandPrimary) },
+                                onClick = {
+                                    destinationMenuExpanded = false
+                                    onOpenSavedRoute()
+                                }
+                            )
+                        }
+                    }
                     Text(
                         text = state.destination.address,
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
@@ -377,54 +456,62 @@ fun RoutePlanningScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Chips rápidos de destinos populares en Argentina
-            Text(
-                text = "Destinos frecuentes en Argentina",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                cities.forEach { city ->
-                    val isSelected = state.destination.name.contains(city.name, ignoreCase = true) ||
-                            state.destinationInputText.contains(city.name, ignoreCase = true)
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onSelectDestinationCity(city) },
-                        label = { Text(city.name) },
-                        leadingIcon = if (isSelected) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = BrandPrimary
-                                )
-                            }
-                        } else null,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = BrandPrimary.copy(alpha = 0.15f),
-                            selectedLabelColor = BrandPrimary
-                        )
-                    )
+            // Si la dirección existe en varias ciudades, el usuario elige cuál es
+            if (state.addressOptions.isNotEmpty()) {
+                Text(
+                    text = if (state.optionsAreForOrigin) "¿Cuál es tu origen?" else "¿Cuál es tu destino?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                state.addressOptions.forEach { option ->
+                    TouchAccessibleCard(
+                        onClick = { onAddressOptionClick(option) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = BrandPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = option.address,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
             // Mapa interactivo de la ruta preliminar
-            Text(
-                text = "Vista previa del mapa de ruta",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Vista previa del mapa de ruta",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                TextButton(
+                    onClick = onPreviewClick,
+                    enabled = !state.isLoading
+                ) {
+                    Text("Ver en el mapa")
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             Surface(
@@ -432,32 +519,61 @@ fun RoutePlanningScreen(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(240.dp)
             ) {
-                RouteMapView(
-                    routePlan = state.calculatedPlan ?: com.chargeroute.app.domain.model.RoutePlan(
-                        origin = state.origin,
-                        destination = state.destination,
-                        distanceKm = 404.0,
-                        totalDurationMinutes = 295,
-                        driveDurationMinutes = 260,
-                        chargeDurationMinutes = 35,
-                        stops = emptyList(),
-                        polylinePoints = listOf(
-                            Pair(state.origin.latitude, state.origin.longitude),
-                            Pair(-36.3132, -57.6792), // Dolores
-                            Pair(state.destination.latitude, state.destination.longitude)
-                        ),
-                        encodedPolyline = "",
-                        arrivalBatteryPercent = 25,
-                        consumptionKwhPer100Km = 15.5,
-                        departureTime = "09:41",
-                        arrivalTime = "14:36",
-                        isLowBatteryWarning = false,
-                        warningMessage = null
-                    ),
-                    modifier = Modifier.fillMaxSize()
-                )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    RouteMapView(
+                        routePlan = state.calculatedPlan,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    if (state.calculatedPlan == null) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.align(Alignment.Center)
+                        ) {
+                            Text(
+                                text = if (state.isLoading) "Buscando la ruta..." else "Tocá \"Ver en el mapa\"",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Paradas que aparecen en el mapa
+            state.calculatedPlan?.let { plan ->
+                if (plan.isApproximate) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Ruta aproximada: no se pudo consultar el camino real. Tocá \"Ver en el mapa\" para reintentar.",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFB91C1C)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.ElectricBolt,
+                        contentDescription = null,
+                        tint = BrandPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (plan.stops.isEmpty()) {
+                            "${plan.distanceKm.toInt()} km • sin paradas de carga"
+                        } else {
+                            "${plan.distanceKm.toInt()} km • parada en " + plan.stops.joinToString { it.station.name }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

@@ -13,6 +13,8 @@ import com.chargeroute.app.domain.repository.RouteRepository
 import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.domain.repository.VehicleRepository
 import com.chargeroute.app.domain.usecase.CalculateRouteUseCase
+import com.chargeroute.app.domain.usecase.GeocodeAddressUseCase
+import com.chargeroute.app.domain.usecase.GetNavigationStepsUseCase
 import com.chargeroute.app.domain.usecase.GetOfflineRouteUseCase
 import com.chargeroute.app.domain.usecase.GetVehicleCatalogUseCase
 import com.chargeroute.app.domain.usecase.SaveTripUseCase
@@ -34,6 +36,8 @@ interface AppContainer {
     val getOfflineRouteUseCase: GetOfflineRouteUseCase
     val saveTripUseCase: SaveTripUseCase
     val getVehicleCatalogUseCase: GetVehicleCatalogUseCase
+    val geocodeAddressUseCase: GeocodeAddressUseCase
+    val getNavigationStepsUseCase: GetNavigationStepsUseCase
 }
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
@@ -88,5 +92,13 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val getVehicleCatalogUseCase: GetVehicleCatalogUseCase by lazy {
         GetVehicleCatalogUseCase(vehicleRepository)
+    }
+
+    override val geocodeAddressUseCase: GeocodeAddressUseCase by lazy {
+        GeocodeAddressUseCase(routeRepository)
+    }
+
+    override val getNavigationStepsUseCase: GetNavigationStepsUseCase by lazy {
+        GetNavigationStepsUseCase(routeRepository)
     }
 }

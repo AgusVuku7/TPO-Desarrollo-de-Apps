@@ -1,0 +1,23 @@
+<!-- Bandera a cuadros blancos y negros, como la de F1 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="46dp"
+    android:height="46dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <!-- Mastil -->
+    <path
+        android:fillColor="#111111"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.5"
+        android:pathData="M6,2h2v28h-2z" />
+    <!-- Tela blanca -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#111111"
+        android:strokeWidth="0.8"
+        android:pathData="M8,3h20v15h-20z" />
+    <!-- Cuadros negros -->
+    <path
+        android:fillColor="#111111"
+        android:pathData="M8,3h5v5h-5z M18,3h5v5h-5z M13,8h5v5h-5z M23,8h5v5h-5z M8,13h5v5h-5z M18,13h5v5h-5z" />
+</vector>

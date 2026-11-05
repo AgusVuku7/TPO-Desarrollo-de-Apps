@@ -41,9 +41,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BrandPrimary
+import com.chargeroute.app.domain.model.RouteGeometry
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Station
+import java.io.File
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
@@ -62,14 +66,23 @@ fun RouteMapView(
 ) {
     val context = LocalContext.current
 
-    // Initialize osmdroid configuration
-    LaunchedEffect(Unit) {
-        Configuration.getInstance().load(context, context.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
-        Configuration.getInstance().userAgentValue = context.packageName
-    }
+    // Para no redibujar todo en cada movimiento del auto
+    val drawnPlan = remember { arrayOfNulls<RoutePlan>(1) }
+    val carMarkerHolder = remember { arrayOfNulls<Marker>(1) }
 
     val mapView = remember {
+        // La configuracion tiene que estar lista antes de crear el mapa (si no, no bajan bien los tiles)
+        Configuration.getInstance().load(context, context.getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
+        Configuration.getInstance().userAgentValue = context.packageName
+        Configuration.getInstance().osmdroidBasePath = File(context.cacheDir, "osmdroid")
+        Configuration.getInstance().osmdroidTileCache = File(context.cacheDir, "osmdroid/tiles")
+
         MapView(context).apply {
+            // Para poder mover el mapa con el dedo aunque este dentro de una pantalla con scroll
+            setOnTouchListener { view, _ ->
+                view.parent?.requestDisallowInterceptTouchEvent(true)
+                false
+            }
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
@@ -92,6 +105,10 @@ fun RouteMapView(
             factory = { mapView },
             modifier = Modifier.fillMaxSize(),
             update = { map ->
+                // Solo se redibuja si cambio la ruta. Si no, el mapa volvia al zoom inicial a cada rato.
+                if (drawnPlan[0] != routePlan) {
+                drawnPlan[0] = routePlan
+                carMarkerHolder[0] = null
                 map.overlays.clear()
 
                 if (routePlan != null && routePlan.polylinePoints.isNotEmpty()) {
@@ -107,21 +124,23 @@ fun RouteMapView(
                     }
                     map.overlays.add(polyline)
 
-                    // 2. Origin Marker (Green Pin)
+                    // 2. Origin Marker (punto verde)
                     val originGeo = GeoPoint(routePlan.origin.latitude, routePlan.origin.longitude)
                     val originMarker = Marker(map).apply {
                         position = originGeo
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        icon = ContextCompat.getDrawable(context, R.drawable.ic_map_origin)
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                         title = "Origen: ${routePlan.origin.name}"
                         snippet = routePlan.origin.address
                     }
                     map.overlays.add(originMarker)
 
-                    // 3. Destination Marker (Red Pin)
+                    // 3. Destination Marker (banderita)
                     val destGeo = GeoPoint(routePlan.destination.latitude, routePlan.destination.longitude)
                     val destMarker = Marker(map).apply {
                         position = destGeo
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        icon = ContextCompat.getDrawable(context, R.drawable.ic_map_flag)
+                        setAnchor(0.22f, 0.94f) // la base del mastil queda justo en el destino
                         title = "Destino: ${routePlan.destination.name}"
                         snippet = routePlan.destination.address
                     }
@@ -132,7 +151,8 @@ fun RouteMapView(
                         val stationGeo = GeoPoint(stop.station.latitude, stop.station.longitude)
                         val stationMarker = Marker(map).apply {
                             position = stationGeo
-                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                            icon = ContextCompat.getDrawable(context, R.drawable.ic_map_bolt) // rayo = aca se carga
+                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             title = stop.station.name
                             val kw = stop.station.connectors.firstOrNull()?.powerKw?.toInt() ?: 120
                             snippet = "${stop.station.operator} • DC $kw kW • Parada ${stop.stopDurationMinutes} min"
@@ -146,18 +166,17 @@ fun RouteMapView(
 
                     // 5. Active Car Marker along the polyline
                     if (activeCarProgress != null) {
-                        val progressClamped = activeCarProgress.coerceIn(0f, 1f)
-                        val carPoint = interpolatePolyline(geoPoints, progressClamped)
                         val carMarker = Marker(map).apply {
-                            position = carPoint
+                            position = originGeo
+                            icon = ContextCompat.getDrawable(context, R.drawable.ic_map_nav)
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             title = "Tu Vehículo en Ruta"
-                            snippet = "Progreso: ${(progressClamped * 100).toInt()}%"
                         }
                         map.overlays.add(carMarker)
+                        carMarkerHolder[0] = carMarker
 
-                        // Center map on moving vehicle in active navigation mode
-                        map.controller.animateTo(carPoint)
+                        // Zoom de navegacion: se ven las calles y que el auto va por la ruta
+                        map.controller.setZoom(16.0)
                     } else {
                         // Fit bounding box showing origin, destination, and all stops
                         try {
@@ -174,13 +193,29 @@ fun RouteMapView(
                         }
                     }
                 }
+                }
+
+                // El auto se mueve siempre sobre la linea de la ruta
+                val carMarker = carMarkerHolder[0]
+                if (carMarker != null && routePlan != null && activeCarProgress != null) {
+                    val progressClamped = activeCarProgress.coerceIn(0f, 1f)
+                    val carPoint = RouteGeometry.pointAtProgress(routePlan.polylinePoints, progressClamped)
+                    val carGeo = GeoPoint(carPoint.first, carPoint.second)
+                    carMarker.position = carGeo
+                    carMarker.snippet = "Progreso: ${(progressClamped * 100).toInt()}%"
+
+                    // Modo conductor: el mapa gira segun hacia donde va el auto y el auto queda abajo
+                    map.mapOrientation = -RouteGeometry.bearingAtProgress(routePlan.polylinePoints, progressClamped)
+                    map.setMapCenterOffset(0, map.height / 4)
+                    map.controller.setCenter(carGeo)
+                }
 
                 map.invalidate()
             }
         )
 
-        // Overlay Map Controls: Zoom in / Zoom out / Recenter
-        Column(
+        // Overlay Map Controls: Zoom in / Zoom out / Recenter (en modo conductor no se muestran)
+        if (activeCarProgress == null) Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 12.dp, bottom = 12.dp)
@@ -223,26 +258,4 @@ fun RouteMapView(
             }
         }
     }
-}
-
-/**
- * Interpola un GeoPoint a lo largo de los puntos de la polilínea según un porcentaje (0.0 a 1.0)
- */
-private fun interpolatePolyline(points: List<GeoPoint>, progress: Float): GeoPoint {
-    if (points.isEmpty()) return GeoPoint(-34.6037, -58.3816)
-    if (points.size == 1 || progress <= 0f) return points.first()
-    if (progress >= 1f) return points.last()
-
-    val totalSegments = points.size - 1
-    val scaledProgress = progress * totalSegments
-    val index = scaledProgress.toInt().coerceIn(0, totalSegments - 1)
-    val fraction = scaledProgress - index
-
-    val p1 = points[index]
-    val p2 = points[index + 1]
-
-    val lat = p1.latitude + (p2.latitude - p1.latitude) * fraction
-    val lon = p1.longitude + (p2.longitude - p1.longitude) * fraction
-
-    return GeoPoint(lat, lon)
 }
