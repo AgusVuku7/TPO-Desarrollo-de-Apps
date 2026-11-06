@@ -1,16 +1,16 @@
 package com.chargeroute.app.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.chargeroute.app.data.local.entity.TripEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TripDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // @Upsert en vez de REPLACE: no borra el viaje, asi no se pierden en cascada su ruta y paradas
+    @Upsert
     fun insertOrUpdateTrip(trip: TripEntity): Long
 
     @Update
