@@ -88,8 +88,8 @@ fun ActiveNavigationScreen(
         onDispose { onLeaveScreen() }
     }
 
-    // Una vez que se cargo, ya no queda "proxima parada"
-    val nextStop = if (state.stopPassed) null else state.trip?.routePlan?.stops?.firstOrNull()
+    // Proxima parada de carga (o la parada en la que se esta cargando). Null si ya se pasaron todas.
+    val nextStop = state.nextStop
     var showBatteryControls by remember { mutableStateOf(false) }
 
     Scaffold { padding ->
