@@ -8,10 +8,9 @@ import com.chargeroute.app.data.remote.RetrofitClient
 import com.chargeroute.app.data.remote.dto.OsrmRoute
 import com.chargeroute.app.data.remote.dto.OsrmStep
 import com.chargeroute.app.domain.model.NavStep
-import com.chargeroute.app.domain.model.RouteGeometry
+import com.chargeroute.app.domain.model.ChargingPlanner
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.RoutePlan
-import com.chargeroute.app.domain.model.Station
 import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.repository.RouteRepository
@@ -104,99 +103,83 @@ class RouteRepositoryImpl(
             // Consumo: Base + penalidad del 10% si el aire acondicionado está encendido
             val acMultiplier = if (acActive) 1.10 else 1.00
             val consumptionKwhPer100Km = vehicle.baseConsumptionKwhPer100Km * acMultiplier
-            val totalEnergyNeededKwh = (distanceKm * consumptionKwhPer100Km) / 100.0
 
-            val usableCapacity = vehicle.usableBatteryKwh
-            val availableInitialEnergyKwh = (initialBatteryPercent / 100.0) * usableCapacity
+            // 1) Se planifican las paradas sobre la ruta directa (regla de negocio en el dominio)
+            var chargingPlan = ChargingPlanner.plan(
+                routeKm = distanceKm,
+                stations = ChargingPlanner.locateOnRoute(stationsAlongRoute, polylinePoints, distanceKm),
+                vehicle = vehicle,
+                consumptionKwhPer100Km = consumptionKwhPer100Km,
+                initialBatteryPercent = initialBatteryPercent
+            )
 
-            val stops = mutableListOf<TripStop>()
-            var chargeDurationMinutes = 0
-            var finalArrivalBatteryPercent: Int
+            // 2) Si hay paradas, la ruta tiene que pasar por los cargadores elegidos
+            if (chargingPlan.stops.isNotEmpty()) {
+                val chosenStations = chargingPlan.stops.map { it.station }
+                val viaCoords = (listOf("$origLon,$origLat") +
+                        chosenStations.map { "${it.longitude},${it.latitude}" } +
+                        listOf("$destLon,$destLat")).joinToString(";")
+                val viaRoute = if (isOnline) fetchOsrmRoute(viaCoords) else null
+                val viaGeometry = viaRoute?.geometry
+                val viaPoints = if (viaGeometry != null) RouteMapper.decodePolyline(viaGeometry) else emptyList()
 
-            // Reserva de seguridad mínima requerida al llegar: 15%
-            val safetyReserveKwh = usableCapacity * 0.15
-
-            if (availableInitialEnergyKwh < totalEnergyNeededKwh + safetyReserveKwh) {
-                // Requiere al menos una parada intermedia de recarga
-                // Buscar una estación cerca de la ruta a la que se pueda llegar con la batería actual
-                val reachableKm = (availableInitialEnergyKwh / consumptionKwhPer100Km) * 100.0
-                val candidateStation = findBestStationAlongRoute(stationsAlongRoute, polylinePoints, distanceKm, reachableKm)
-
-                if (candidateStation == null) {
-                    // No hay cargadores cerca de esta ruta: se informa la batería real, sin parada
-                    val energyRemaining = availableInitialEnergyKwh - totalEnergyNeededKwh
-                    finalArrivalBatteryPercent = ((energyRemaining / usableCapacity) * 100.0).toInt().coerceIn(0, 100)
+                if (viaRoute != null && viaGeometry != null && viaPoints.isNotEmpty()) {
+                    distanceKm = viaRoute.distanceMeters / 1000.0
+                    driveDurationMinutes = (viaRoute.durationSeconds / 60.0).toInt()
+                    polylinePoints = viaPoints
+                    encodedPolyline = viaGeometry
+                    isApproximate = false
                 } else {
-                    // Se recalcula la ruta para que pase por el cargador y la parada quede sobre la línea
-                    val viaCoords = "$origLon,$origLat;${candidateStation.longitude},${candidateStation.latitude};$destLon,$destLat"
-                    val viaRoute = if (isOnline) fetchOsrmRoute(viaCoords) else null
-                    val viaGeometry = viaRoute?.geometry
-                    val viaPoints = if (viaGeometry != null) RouteMapper.decodePolyline(viaGeometry) else emptyList()
-
-                    val distToStation: Double
-                    if (viaRoute != null && viaGeometry != null && viaPoints.isNotEmpty()) {
-                        distanceKm = viaRoute.distanceMeters / 1000.0
-                        driveDurationMinutes = (viaRoute.durationSeconds / 60.0).toInt()
-                        polylinePoints = viaPoints
-                        encodedPolyline = viaGeometry
-                        isApproximate = false
-                        distToStation = viaRoute.legs?.firstOrNull()?.distanceMeters?.div(1000.0)
-                            ?: (RouteGeometry.nearestOnRoute(viaPoints, candidateStation.latitude, candidateStation.longitude).progress * distanceKm)
-                    } else {
-                        // Sin internet: línea origen -> cargador -> destino
-                        val stationPoint = LocationPoint(candidateStation.name, candidateStation.address, candidateStation.latitude, candidateStation.longitude)
-                        polylinePoints = generateInterpolatedRoute(origin, stationPoint) + generateInterpolatedRoute(stationPoint, destination)
-                        encodedPolyline = RouteMapper.encodePolyline(polylinePoints)
-                        isApproximate = true
-                        distToStation = RouteGeometry.nearestOnRoute(polylinePoints, candidateStation.latitude, candidateStation.longitude).progress * distanceKm
-                    }
-
-                    val energyToStation = (distToStation * consumptionKwhPer100Km) / 100.0
-                    val arrivalBatteryAtStation = (((availableInitialEnergyKwh - energyToStation) / usableCapacity) * 100.0)
-                        .toInt()
-                        .coerceIn(0, 100)
-
-                    // Tramo desde la estación hasta el destino
-                    val distFromStationToDest = distanceKm - distToStation
-                    val energyFromStation = (distFromStationToDest * consumptionKwhPer100Km) / 100.0
-
-                    // Cargar por lo menos a 75%, o lo que haga falta para llegar con reserva (nunca más de 100%)
-                    val neededPercent = (((energyFromStation + safetyReserveKwh) / usableCapacity) * 100.0).toInt()
-                    val departureBatteryAtStation = neededPercent.coerceIn(maxOf(75, arrivalBatteryAtStation), 100)
-                    val energyToChargeKwh = ((departureBatteryAtStation - arrivalBatteryAtStation) / 100.0) * usableCapacity
-                    // Tiempo de carga estimado según la potencia del conector compatible y la del vehículo.
-                    // Si la estación no informa potencia (0 kW), se asumen 50 kW.
-                    val stationKw = candidateStation.connectors
-                        .filter { it.type in vehicle.supportedConnectors && it.powerKw > 0 }
-                        .maxOfOrNull { it.powerKw } ?: 50.0
-                    val maxKw = minOf(stationKw, vehicle.maxDcKw)
-                    val chargeTimeMin = ((energyToChargeKwh / maxKw) * 60.0).toInt().coerceIn(5, 240)
-                    chargeDurationMinutes += chargeTimeMin
-
-                    val minutesToStation = if (distanceKm > 0) ((distToStation / distanceKm) * driveDurationMinutes).toInt() else 0
-                    val stop = TripStop(
-                        id = "stop_1_${System.currentTimeMillis()}",
-                        station = candidateStation,
-                        orderIndex = 1,
-                        stopDurationMinutes = chargeTimeMin,
-                        arrivalBatteryPercent = arrivalBatteryAtStation,
-                        departureBatteryPercent = departureBatteryAtStation,
-                        chargedEnergyKwh = (energyToChargeKwh * 10.0).toInt() / 10.0,
-                        arrivalTime = calculateArrivalTime(minutesToStation),
-                        departureTime = calculateArrivalTime(minutesToStation + chargeTimeMin)
-                    )
-                    stops.add(stop)
-
-                    val energyAtDest = ((departureBatteryAtStation / 100.0) * usableCapacity) - energyFromStation
-                    finalArrivalBatteryPercent = ((energyAtDest / usableCapacity) * 100.0).toInt().coerceIn(0, 100)
+                    // Sin internet: líneas rectas origen -> cargadores -> destino
+                    val waypoints = listOf(origin) +
+                            chosenStations.map { LocationPoint(it.name, it.address, it.latitude, it.longitude) } +
+                            listOf(destination)
+                    polylinePoints = waypoints.zipWithNext { from, to -> generateInterpolatedRoute(from, to) }.flatten()
+                    encodedPolyline = RouteMapper.encodePolyline(polylinePoints)
+                    isApproximate = true
                 }
-            } else {
-                // El viaje se puede realizar directo sin paradas intermedias obligatorias
-                val energyRemaining = availableInitialEnergyKwh - totalEnergyNeededKwh
-                finalArrivalBatteryPercent = ((energyRemaining / usableCapacity) * 100.0).toInt().coerceIn(5, 100)
+
+                // 3) Se recalcula sobre la ruta nueva (que incluye los desvíos) con los cargadores elegidos
+                chargingPlan = ChargingPlanner.plan(
+                    routeKm = distanceKm,
+                    stations = ChargingPlanner.locateOnRoute(chosenStations, polylinePoints, distanceKm),
+                    vehicle = vehicle,
+                    consumptionKwhPer100Km = consumptionKwhPer100Km,
+                    initialBatteryPercent = initialBatteryPercent
+                )
             }
 
+            // Paradas con su horario estimado (manejo hasta ahí + cargas anteriores)
+            val now = System.currentTimeMillis()
+            var previousChargeMinutes = 0
+            val stops = chargingPlan.stops.mapIndexed { index, planned ->
+                val driveMinutes = if (distanceKm > 0) ((planned.km / distanceKm) * driveDurationMinutes).toInt() else 0
+                val minutesToStop = driveMinutes + previousChargeMinutes
+                previousChargeMinutes += planned.chargeMinutes
+                TripStop(
+                    id = "stop_${index + 1}_$now",
+                    station = planned.station,
+                    orderIndex = index + 1,
+                    stopDurationMinutes = planned.chargeMinutes,
+                    arrivalBatteryPercent = planned.arrivalBatteryPercent,
+                    departureBatteryPercent = planned.departureBatteryPercent,
+                    chargedEnergyKwh = planned.chargedEnergyKwh,
+                    arrivalTime = calculateArrivalTime(minutesToStop),
+                    departureTime = calculateArrivalTime(minutesToStop + planned.chargeMinutes)
+                )
+            }
+
+            val chargeDurationMinutes = chargingPlan.stops.sumOf { it.chargeMinutes }
+            val finalArrivalBatteryPercent = chargingPlan.arrivalBatteryPercent
             val totalDurationMinutes = driveDurationMinutes + chargeDurationMinutes
+
+            val warning = when {
+                !chargingPlan.reachesDestination ->
+                    "Con las estaciones encontradas no alcanza la batería para llegar al destino. Revisá la carga inicial o el recorrido."
+                finalArrivalBatteryPercent < 20 ->
+                    "Batería estimada al arribar: $finalArrivalBatteryPercent%. Recomendamos mantener la carga programada."
+                else -> null
+            }
 
             val routePlan = RoutePlan(
                 origin = origin,
@@ -214,10 +197,8 @@ class RouteRepositoryImpl(
                 consumptionKwhPer100Km = (consumptionKwhPer100Km * 10.0).toInt() / 10.0,
                 departureTime = "09:41",
                 arrivalTime = calculateArrivalTime(totalDurationMinutes),
-                isLowBatteryWarning = finalArrivalBatteryPercent < 20,
-                warningMessage = if (finalArrivalBatteryPercent < 20) {
-                    "Batería estimada al arribar: $finalArrivalBatteryPercent%. Recomendamos mantener la carga programada."
-                } else null
+                isLowBatteryWarning = warning != null,
+                warningMessage = warning
             )
 
             Result.success(routePlan)
@@ -232,26 +213,6 @@ class RouteRepositoryImpl(
         val dRev1 = calculateHaversineDistanceKm(lat1, lon1, tLat2, tLon2)
         val dRev2 = calculateHaversineDistanceKm(lat2, lon2, tLat1, tLon1)
         return (d1 < 70.0 && d2 < 70.0) || (dRev1 < 70.0 && dRev2 < 70.0)
-    }
-
-    // stations ya viene filtrada por StationFilter: compatibles, cerca de la ruta y en orden de recorrido
-    private fun findBestStationAlongRoute(
-        stations: List<Station>,
-        polyline: List<Pair<Double, Double>>,
-        routeKm: Double,
-        reachableKm: Double
-    ): Station? {
-        if (stations.isEmpty()) return null
-
-        // Kilómetro de la ruta en el que queda cada estación
-        val kmOnRoute = stations.associateWith { station ->
-            RouteGeometry.nearestOnRoute(polyline, station.latitude, station.longitude).progress * routeKm
-        }
-
-        // De las que se llega con la batería actual, la más avanzada en el viaje.
-        // Si no se llega a ninguna, la primera del camino.
-        val reachable = stations.filter { kmOnRoute.getValue(it) <= reachableKm }
-        return reachable.maxByOrNull { kmOnRoute.getValue(it) } ?: stations.first()
     }
 
     private suspend fun fetchOsrmRoute(coordinates: String): OsrmRoute? {
