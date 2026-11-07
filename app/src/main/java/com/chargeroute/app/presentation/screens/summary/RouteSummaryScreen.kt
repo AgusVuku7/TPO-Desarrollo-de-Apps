@@ -235,7 +235,7 @@ fun RouteSummaryScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "${plan.stops.size} carga",
+                                    text = if (plan.stops.size == 1) "1 carga" else "${plan.stops.size} cargas",
                                     color = BatteryGreen,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold

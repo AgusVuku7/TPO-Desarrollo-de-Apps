@@ -6,6 +6,7 @@ import com.chargeroute.app.core.location.LocationClient
 import com.chargeroute.app.domain.model.NavStep
 import com.chargeroute.app.domain.model.RouteGeometry
 import com.chargeroute.app.domain.model.Trip
+import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.domain.usecase.GetNavigationStepsUseCase
 import com.chargeroute.app.domain.usecase.UpdateBatteryUseCase
@@ -35,8 +36,8 @@ data class ActiveNavigationUiState(
     val roadName: String = "Autovía 2 (Sentido Sur)",
     val isArrived: Boolean = false,
     val isSimulationPlaying: Boolean = false,
-    val stopProgress: Float? = null, // en que parte de la ruta esta el cargador
-    val stopPassed: Boolean = false,
+    val stopProgresses: List<Float> = emptyList(), // en que parte de la ruta esta cada cargador (0.0 a 1.0)
+    val nextStopIndex: Int = 0, // proxima parada (o la parada en la que se esta cargando)
     val isCharging: Boolean = false,
     val isGpsTracking: Boolean = false,
     val gpsNotice: String? = null,
@@ -44,6 +45,14 @@ data class ActiveNavigationUiState(
 ) {
     val isLowBatteryWarning: Boolean
         get() = currentBatteryPercent < 20
+
+    // Proxima parada de carga (null si ya se pasaron todas)
+    val nextStop: TripStop?
+        get() = trip?.routePlan?.stops?.getOrNull(nextStopIndex)
+
+    // Lugar de la ruta donde esta la proxima parada
+    val stopProgress: Float?
+        get() = stopProgresses.getOrNull(nextStopIndex)
 }
 
 class ActiveNavigationViewModel(
@@ -117,13 +126,10 @@ class ActiveNavigationViewModel(
             val trip = tripRepository.getTripById(tripId).firstOrNull() ?: tripRepository.getLatestTrip().firstOrNull()
             if (trip != null) {
                 val totalDist = trip.routePlan.distanceKm.toInt()
-                val nextStop = trip.routePlan.stops.firstOrNull()
-                // Lugar real del cargador sobre la ruta
-                val stopProgress = nextStop?.let {
+                // Lugar real de cada cargador sobre la ruta
+                val stopProgresses = trip.routePlan.stops.map {
                     RouteGeometry.nearestOnRoute(trip.routePlan.polylinePoints, it.station.latitude, it.station.longitude).progress
                 }
-                val stopDist = if (stopProgress != null) (totalDist * stopProgress).toInt() else totalDist
-                val stopMin = if (stopProgress != null) (trip.routePlan.driveDurationMinutes * stopProgress).toInt() else trip.routePlan.driveDurationMinutes
                 batteryExact = null
 
                 // Conserva el progreso si ya estamos en curso de este mismo viaje
@@ -131,6 +137,17 @@ class ActiveNavigationViewModel(
                 val isSameTrip = _uiState.value.trip?.id == trip.id && !_uiState.value.isArrived
                 val currentProg = if (isSameTrip) _uiState.value.progress else 0.0f
                 val currentSpeed = 0 // recien arranca, el auto todavia no se mueve
+
+                // Proxima parada: la primera que todavia no se alcanzo
+                val nextStopIndex = if (isSameTrip) {
+                    _uiState.value.nextStopIndex
+                } else {
+                    stopProgresses.indexOfFirst { it > currentProg }.let { if (it == -1) stopProgresses.size else it }
+                }
+                val nextStop = trip.routePlan.stops.getOrNull(nextStopIndex)
+                val stopProgress = stopProgresses.getOrNull(nextStopIndex)
+                val stopDist = if (stopProgress != null) (totalDist * stopProgress).toInt() else totalDist
+                val stopMin = if (stopProgress != null) (trip.routePlan.driveDurationMinutes * stopProgress).toInt() else trip.routePlan.driveDurationMinutes
 
                 _uiState.value = ActiveNavigationUiState(
                     trip = trip,
@@ -146,8 +163,8 @@ class ActiveNavigationViewModel(
                     maneuverDistance = if (isSameTrip) _uiState.value.maneuverDistance else "$stopDist km",
                     maneuverSubtext = if (nextStop != null) "Próxima parada: ${nextStop.station.name}" else "Hacia ${trip.destination.name}",
                     roadName = "Hacia ${trip.destination.name}",
-                    stopProgress = stopProgress,
-                    stopPassed = stopProgress != null && currentProg >= stopProgress && currentProg > 0f,
+                    stopProgresses = stopProgresses,
+                    nextStopIndex = nextStopIndex,
                     isCharging = isSameTrip && _uiState.value.isCharging,
                     maneuverType = if (isSameTrip) _uiState.value.maneuverType else "straight"
                 )
@@ -291,9 +308,14 @@ class ActiveNavigationViewModel(
         val current = _uiState.value
         var newProgress = (current.progress + delta).coerceIn(0f, 1f)
 
+        // Si estaba cargando, al volver a avanzar esa parada queda atras y se apunta a la siguiente
+        val stopIndex = if (current.isCharging) current.nextStopIndex + 1 else current.nextStopIndex
+        val stops = current.trip?.routePlan?.stops.orEmpty()
+        val nextStop = stops.getOrNull(stopIndex)
+        val stopProgress = current.stopProgresses.getOrNull(stopIndex)
+
         // Si en este paso pasaria por el cargador, se frena justo ahi
-        val stopProgress = current.stopProgress
-        val reachedStop = stopProgress != null && !current.stopPassed &&
+        val reachedStop = nextStop != null && stopProgress != null &&
                 current.progress < stopProgress && newProgress >= stopProgress
         if (reachedStop && stopProgress != null) {
             newProgress = stopProgress
@@ -303,9 +325,7 @@ class ActiveNavigationViewModel(
         val totalDist = current.trip?.routePlan?.distanceKm ?: 404.0
         val remainingKm = ((1.0 - newProgress) * totalDist).toInt().coerceAtLeast(0)
 
-        val stopPassed = current.stopPassed || reachedStop
-        val nextStop = current.trip?.routePlan?.stops?.firstOrNull()
-        val stopDistanceKm = if (nextStop != null && stopProgress != null && !stopPassed) {
+        val stopDistanceKm = if (nextStop != null && stopProgress != null) {
             (((stopProgress - newProgress) * totalDist).toInt()).coerceAtLeast(0)
         } else {
             remainingKm
@@ -338,9 +358,13 @@ class ActiveNavigationViewModel(
             reachedStop && nextStop != null -> "Cargando en ${nextStop.station.name}"
             step != null -> step.instruction
             // Sin indicaciones (por ejemplo sin internet) se muestra hacia donde se va
-            !stopPassed && nextStop != null -> "Seguí la ruta hacia ${nextStop.station.name}"
+            nextStop != null -> "Seguí la ruta hacia ${nextStop.station.name}"
             else -> "Seguí la ruta hacia $destinationName"
         }
+
+        // Debajo de la indicacion: la parada que viene despues (o el destino)
+        val upcomingStop = if (reachedStop) stops.getOrNull(stopIndex + 1) else nextStop
+        val subtext = upcomingStop?.let { "Próxima parada: ${it.station.name}" } ?: "Hacia $destinationName"
 
         val maneuverDist = when {
             arrived || reachedStop -> "0 m"
@@ -371,10 +395,10 @@ class ActiveNavigationViewModel(
                 currentManeuver = maneuver,
                 maneuverDistance = maneuverDist,
                 isArrived = arrived,
-                stopPassed = stopPassed,
+                nextStopIndex = stopIndex,
                 isCharging = reachedStop,
                 maneuverType = maneuverType,
-                maneuverSubtext = if (stopPassed) "Hacia $destinationName" else it.maneuverSubtext
+                maneuverSubtext = subtext
             )
         }
 
