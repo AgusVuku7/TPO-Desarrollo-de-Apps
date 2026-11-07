@@ -94,6 +94,22 @@ class ChargingPlannerTest {
     }
 
     @Test
+    fun chargingAbove80PercentIsSlower() {
+        // 50 kWh a 50 kW. Del 60 al 80 % (10 kWh) a 50 kW = 12 min.
+        // Del 80 al 100 % (10 kWh) a la mitad (25 kW) = 24 min. Total 36 min.
+        assertEquals(12, ChargingPlanner.chargeMinutes(60.0, 80.0, 50.0, 50.0))
+        assertEquals(24, ChargingPlanner.chargeMinutes(80.0, 100.0, 50.0, 50.0))
+        assertEquals(36, ChargingPlanner.chargeMinutes(60.0, 100.0, 50.0, 50.0))
+    }
+
+    @Test
+    fun kwidChargeFrom37To100TakesAbout45Minutes() {
+        // Caso real de la app: Kwid de 26,8 kWh en un cargador limitado a 30 kW.
+        // 37 -> 80 % a 30 kW = 23 min; 80 -> 100 % a 15 kW = 21,4 min. Antes daba 34 min.
+        assertEquals(45, ChargingPlanner.chargeMinutes(37.0, 100.0, 26.8, 30.0))
+    }
+
+    @Test
     fun locatesStationsOnTheRoute() {
         // Ruta recta de 100 km: una estacion a mitad de camino queda en el km 50
         val route = listOf(Pair(-34.0, -58.0), Pair(-34.9, -58.0))

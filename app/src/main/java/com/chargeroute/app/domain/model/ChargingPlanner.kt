@@ -41,6 +41,10 @@ object ChargingPlanner {
     // Potencia que se asume si la estacion no la informa
     const val DEFAULT_STATION_KW = 50.0
 
+    // Desde este porcentaje la carga se hace mas lenta (a la mitad de potencia)
+    const val SLOW_CHARGE_FROM_PERCENT = 80.0
+    const val SLOW_CHARGE_FACTOR = 0.5
+
     // Tope para que nunca quede en un ciclo infinito
     private const val MAX_STOPS = 10
 
@@ -78,7 +82,7 @@ object ChargingPlanner {
 
             val energyKwh = (departure - arrival) / 100.0 * vehicle.usableBatteryKwh
             val chargeKw = minOf(stationPowerKw(next.station, vehicle), vehicle.maxDcKw)
-            val minutes = ceil(energyKwh / chargeKw * 60.0).toInt().coerceAtLeast(5)
+            val minutes = chargeMinutes(arrival, departure, vehicle.usableBatteryKwh, chargeKw)
 
             stops.add(
                 PlannedStop(
@@ -110,6 +114,22 @@ object ChargingPlanner {
     ): List<StationOnRoute> = stations.map { station ->
         val match = RouteGeometry.nearestOnRoute(route, station.latitude, station.longitude)
         StationOnRoute(station, match.progress * routeKm)
+    }
+
+    /**
+     * Minutos para cargar desde fromPercent hasta toPercent.
+     * En carga rapida la bateria acepta menos potencia cuando esta casi llena:
+     * hasta el 80 % se carga a la potencia indicada y del 80 % en adelante a la mitad.
+     */
+    fun chargeMinutes(fromPercent: Double, toPercent: Double, batteryKwh: Double, powerKw: Double): Int {
+        if (toPercent <= fromPercent) return 0
+        val fastPart = (minOf(toPercent, SLOW_CHARGE_FROM_PERCENT) - fromPercent).coerceAtLeast(0.0)
+        val slowPart = (toPercent - maxOf(fromPercent, SLOW_CHARGE_FROM_PERCENT)).coerceAtLeast(0.0)
+
+        val fastHours = fastPart / 100.0 * batteryKwh / powerKw
+        val slowHours = slowPart / 100.0 * batteryKwh / (powerKw * SLOW_CHARGE_FACTOR)
+        // Se redondea para arriba; el 0.0001 evita que un error de decimales (36,0000001) sume un minuto
+        return ceil((fastHours + slowHours) * 60.0 - 0.0001).toInt().coerceAtLeast(5)
     }
 
     // Potencia del mejor conector compatible con el auto (o la potencia por defecto)
