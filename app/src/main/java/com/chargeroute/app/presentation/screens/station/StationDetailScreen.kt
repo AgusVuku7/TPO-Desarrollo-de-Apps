@@ -208,7 +208,11 @@ fun StationDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Ejemplo: ${station.availableCount} de ${station.totalCount} libres • No es información en vivo",
+                            text = if (station.totalCount > 0) {
+                                "${station.totalCount} puntos de carga • Disponibilidad no informada"
+                            } else {
+                                "Disponibilidad no informada • Confirmá antes de viajar"
+                            },
                             color = BatteryGreen,
                             style = MaterialTheme.typography.labelSmall
                         )
