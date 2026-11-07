@@ -22,6 +22,9 @@ interface StationDao {
     @Query("SELECT * FROM stations")
     fun getAllStations(): Flow<List<StationEntity>>
 
+    @Query("SELECT * FROM stations")
+    fun getAllStationsList(): List<StationEntity>
+
     @Query("SELECT * FROM stations WHERE id IN (:ids)")
     fun getStationsByIds(ids: List<String>): List<StationEntity>
 }
