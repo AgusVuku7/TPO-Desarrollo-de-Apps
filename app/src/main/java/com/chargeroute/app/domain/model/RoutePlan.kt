@@ -8,6 +8,9 @@ data class RoutePlan(
     val driveDurationMinutes: Int,
     val chargeDurationMinutes: Int,
     val stops: List<TripStop>,
+    // RF02: estaciones compatibles cerca de la ruta (se muestran en el mapa).
+    // No se guardan en la tabla de rutas: al abrir un viaje se recalculan con las estaciones de Room.
+    val nearbyStations: List<Station> = emptyList(),
     val polylinePoints: List<Pair<Double, Double>>,
     val encodedPolyline: String,
     val arrivalBatteryPercent: Int,

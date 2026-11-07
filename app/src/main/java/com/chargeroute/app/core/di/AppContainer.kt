@@ -1,15 +1,19 @@
 package com.chargeroute.app.core.di
 
 import android.content.Context
+import com.chargeroute.app.BuildConfig
 import com.chargeroute.app.core.location.LocationClient
 import com.chargeroute.app.core.network.NetworkConnectivityObserver
 import com.chargeroute.app.core.sensor.AmbientLightSensorManager
 import com.chargeroute.app.data.local.ChargeRouteDatabase
 import com.chargeroute.app.data.local.datastore.UserPreferencesDataStore
+import com.chargeroute.app.data.remote.RetrofitClient
 import com.chargeroute.app.data.repository.RouteRepositoryImpl
+import com.chargeroute.app.data.repository.StationRepositoryImpl
 import com.chargeroute.app.data.repository.TripRepositoryImpl
 import com.chargeroute.app.data.repository.VehicleRepositoryImpl
 import com.chargeroute.app.domain.repository.RouteRepository
+import com.chargeroute.app.domain.repository.StationRepository
 import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.domain.repository.VehicleRepository
 import com.chargeroute.app.domain.usecase.CalculateRouteUseCase
@@ -28,6 +32,7 @@ interface AppContainer {
     val locationClient: LocationClient
 
     val vehicleRepository: VehicleRepository
+    val stationRepository: StationRepository
     val routeRepository: RouteRepository
     val tripRepository: TripRepository
 
@@ -66,12 +71,21 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
         VehicleRepositoryImpl(userPreferences)
     }
 
+    override val stationRepository: StationRepository by lazy {
+        StationRepositoryImpl(
+            api = RetrofitClient.ocmApi,
+            stationDao = database.stationDao(),
+            networkObserver = networkObserver,
+            apiKey = BuildConfig.OCM_API_KEY
+        )
+    }
+
     override val routeRepository: RouteRepository by lazy {
-        RouteRepositoryImpl(database, networkObserver)
+        RouteRepositoryImpl(database, networkObserver, stationRepository)
     }
 
     override val tripRepository: TripRepository by lazy {
-        TripRepositoryImpl(database, vehicleRepository)
+        TripRepositoryImpl(database, vehicleRepository, stationRepository)
     }
 
     override val calculateRouteUseCase: CalculateRouteUseCase by lazy {
