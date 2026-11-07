@@ -299,7 +299,11 @@ class RouteRepositoryImpl(
     override suspend fun geocodeAddress(address: String): List<LocationPoint> = withContext(Dispatchers.IO) {
         val response = RetrofitClient.nominatimApi.search(address)
         val results = if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
-        results.mapNotNull { result ->
+        results
+            // Una provincia o un pais no sirven como destino: su punto es el centro del territorio
+            // (por ejemplo "Córdoba, Argentina" queda 70 km antes de la ciudad)
+            .filter { it.addressType !in listOf("state", "region", "country") }
+            .mapNotNull { result ->
             val lat = result.lat?.toDoubleOrNull()
             val lon = result.lon?.toDoubleOrNull()
             if (lat == null || lon == null) {
