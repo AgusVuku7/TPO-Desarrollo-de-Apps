@@ -21,5 +21,11 @@ data class RoutePlan(
     val arrivalTime: String = "",
     val isLowBatteryWarning: Boolean = false,
     val warningMessage: String? = null,
-    val isApproximate: Boolean = false // true si no se pudo consultar el camino real
-)
+    val isApproximate: Boolean = false, // true si no se pudo consultar el camino real
+    // Distancia del camino directo, sin pasar por los cargadores (0 = sin dato)
+    val directDistanceKm: Double = 0.0
+) {
+    // Km extra por salir de la ruta para ir a cargar
+    val detourKm: Int
+        get() = if (directDistanceKm > 0) (distanceKm - directDistanceKm).toInt().coerceAtLeast(0) else 0
+}

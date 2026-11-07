@@ -21,7 +21,8 @@ object RouteMapper {
             chargeDurationMinutes = plan.chargeDurationMinutes,
             arrivalBatteryPercent = plan.arrivalBatteryPercent,
             consumptionKwhPer100Km = plan.consumptionKwhPer100Km,
-            calculatedAtMillis = plan.calculatedAtMillis
+            calculatedAtMillis = plan.calculatedAtMillis,
+            directDistanceKm = plan.directDistanceKm
         )
     }
 
@@ -80,6 +81,7 @@ object RouteMapper {
             consumptionKwhPer100Km = routeEntity.consumptionKwhPer100Km,
             // Los horarios se recalculan a partir del momento en que se calculo la ruta
             calculatedAtMillis = routeEntity.calculatedAtMillis,
+            directDistanceKm = routeEntity.directDistanceKm,
             departureTime = TripClock.at(routeEntity.calculatedAtMillis, 0),
             arrivalTime = TripClock.at(routeEntity.calculatedAtMillis, routeEntity.totalDurationMinutes),
             isLowBatteryWarning = routeEntity.arrivalBatteryPercent < 20,

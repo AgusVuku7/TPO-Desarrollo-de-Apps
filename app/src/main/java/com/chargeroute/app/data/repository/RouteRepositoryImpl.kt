@@ -109,6 +109,9 @@ class RouteRepositoryImpl(
                 initialBatteryPercent = initialBatteryPercent
             )
 
+            // Distancia del camino directo (para mostrar cuánto se desvía para cargar)
+            val directDistanceKm = distanceKm
+
             // 2) Si hay paradas, la ruta tiene que pasar por los cargadores elegidos
             if (chargingPlan.stops.isNotEmpty()) {
                 val chosenStations = chargingPlan.stops.map { it.station }
@@ -194,6 +197,8 @@ class RouteRepositoryImpl(
                 arrivalBatteryPercent = finalArrivalBatteryPercent,
                 consumptionKwhPer100Km = (consumptionKwhPer100Km * 10.0).toInt() / 10.0,
                 calculatedAtMillis = now,
+                // Sin el camino real (ruta aproximada) no se sabe el desvío
+                directDistanceKm = if (isApproximate) 0.0 else directDistanceKm,
                 departureTime = clock(0),
                 arrivalTime = clock(totalDurationMinutes),
                 isLowBatteryWarning = warning != null,

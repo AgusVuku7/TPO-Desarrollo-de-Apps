@@ -1,5 +1,6 @@
 package com.chargeroute.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -28,5 +29,8 @@ data class RouteEntity(
     val chargeDurationMinutes: Int,
     val arrivalBatteryPercent: Int,
     val consumptionKwhPer100Km: Double,
-    val calculatedAtMillis: Long
+    val calculatedAtMillis: Long,
+    // Distancia del camino directo, sin pasar por los cargadores (agregada en la version 2 de la base)
+    @ColumnInfo(defaultValue = "0")
+    val directDistanceKm: Double = 0.0
 )
