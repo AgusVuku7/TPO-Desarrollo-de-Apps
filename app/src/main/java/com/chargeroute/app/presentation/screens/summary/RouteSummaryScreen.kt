@@ -138,7 +138,7 @@ fun RouteSummaryScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Plan ilustrativo: salida ${plan?.departureTime ?: "9:41"} • consumo ${String.format(Locale.US, "%.1f", plan?.consumptionKwhPer100Km ?: 15.5)} kWh/100 km.\nDisponibilidad y tiempos de carga estimados, no en vivo.",
+                        text = "Plan ilustrativo: salida ${plan?.departureTime ?: "--:--"} • consumo ${String.format(Locale.US, "%.1f", plan?.consumptionKwhPer100Km ?: 15.5)} kWh/100 km.\nDisponibilidad y tiempos de carga estimados, no en vivo.",
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
