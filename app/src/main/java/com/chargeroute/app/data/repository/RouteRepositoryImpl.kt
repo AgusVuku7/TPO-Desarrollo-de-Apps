@@ -9,14 +9,13 @@ import com.chargeroute.app.data.remote.dto.OsrmRoute
 import com.chargeroute.app.data.remote.dto.OsrmStep
 import com.chargeroute.app.domain.model.NavStep
 import com.chargeroute.app.domain.model.RouteGeometry
-import com.chargeroute.app.domain.model.Connector
-import com.chargeroute.app.domain.model.ConnectorType
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Station
 import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.repository.RouteRepository
+import com.chargeroute.app.domain.repository.StationRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -30,123 +29,11 @@ import kotlin.math.sqrt
 
 class RouteRepositoryImpl(
     private val database: ChargeRouteDatabase,
-    private val networkConnectivityObserver: NetworkConnectivityObserver
+    private val networkConnectivityObserver: NetworkConnectivityObserver,
+    private val stationRepository: StationRepository
 ) : RouteRepository {
 
     private val osrmApi = RetrofitClient.osrmApi
-
-    // Red de estaciones de carga eléctrica verificadas en los principales corredores viales de Argentina
-    private val knownStations = listOf(
-        Station(
-            id = "station_dolores",
-            remoteId = "ocm_ar_210",
-            name = "Punto de Carga YPF Dolores",
-            address = "Área de servicio - Autovía 2, km 210, Dolores",
-            latitude = -36.3132,
-            longitude = -57.6792,
-            connectors = listOf(
-                Connector(type = ConnectorType.CCS2, powerKw = 120.0, isCompatible = true),
-                Connector(type = ConnectorType.TYPE_2, powerKw = 22.0, isCompatible = true),
-                Connector(type = ConnectorType.CHADEMO, powerKw = 50.0, isCompatible = false)
-            ),
-            availableCount = 2,
-            totalCount = 4,
-            amenities = listOf("24 h", "Café / Restaurante", "Baños", "Wi-Fi"),
-            operator = "YPF Punto Eléctrico",
-            notes = "Carga ultra-rápida DC 120 kW en parador principal sobre Autovía 2.",
-            lastUpdatedMillis = System.currentTimeMillis()
-        ),
-        Station(
-            id = "station_chascomus",
-            remoteId = "ocm_ar_122",
-            name = "Estación YPF Chascomús",
-            address = "Autovía 2, km 122, Chascomús",
-            latitude = -35.5786,
-            longitude = -58.0125,
-            connectors = listOf(
-                Connector(type = ConnectorType.CCS2, powerKw = 60.0, isCompatible = true),
-                Connector(type = ConnectorType.TYPE_2, powerKw = 22.0, isCompatible = true)
-            ),
-            availableCount = 1,
-            totalCount = 2,
-            amenities = listOf("24 h", "Minimercado", "Baños"),
-            operator = "YPF Punto Eléctrico",
-            notes = "Acceso directo sobre colectora.",
-            lastUpdatedMillis = System.currentTimeMillis()
-        ),
-        Station(
-            id = "station_castelli",
-            remoteId = "ocm_ar_142",
-            name = "Área de Servicio Shell Castelli",
-            address = "Autovía 2, km 142, Castelli",
-            latitude = -36.0891,
-            longitude = -57.8012,
-            connectors = listOf(
-                Connector(type = ConnectorType.CCS2, powerKw = 100.0, isCompatible = true),
-                Connector(type = ConnectorType.TYPE_2, powerKw = 22.0, isCompatible = true)
-            ),
-            availableCount = 3,
-            totalCount = 4,
-            amenities = listOf("24 h", "Restaurante", "Baños", "Tienda"),
-            operator = "Shell Recharge",
-            notes = "Carga rápida disponible las 24 horas.",
-            lastUpdatedMillis = System.currentTimeMillis()
-        ),
-        Station(
-            id = "station_samborombon",
-            remoteId = "ocm_ar_090",
-            name = "Parador Atalaya Samborombón",
-            address = "Autovía 2, km 90, Chascomús",
-            latitude = -35.2912,
-            longitude = -58.1215,
-            connectors = listOf(
-                Connector(type = ConnectorType.CCS2, powerKw = 50.0, isCompatible = true),
-                Connector(type = ConnectorType.TYPE_2, powerKw = 22.0, isCompatible = true)
-            ),
-            availableCount = 2,
-            totalCount = 2,
-            amenities = listOf("24 h", "Cafetería medialunas", "Baños"),
-            operator = "ChargeBox Net",
-            notes = "Parador clásico sobre Autovía 2 mano hacia la Costa.",
-            lastUpdatedMillis = System.currentTimeMillis()
-        ),
-        Station(
-            id = "station_san_nicolas",
-            remoteId = "ocm_ar_rn9",
-            name = "YPF San Nicolás RN 9",
-            address = "Ruta Nacional 9, km 230, San Nicolás",
-            latitude = -33.3320,
-            longitude = -60.2190,
-            connectors = listOf(
-                Connector(type = ConnectorType.CCS2, powerKw = 100.0, isCompatible = true),
-                Connector(type = ConnectorType.TYPE_2, powerKw = 22.0, isCompatible = true)
-            ),
-            availableCount = 2,
-            totalCount = 2,
-            amenities = listOf("24 h", "Shop", "Wi-Fi"),
-            operator = "YPF Punto Eléctrico",
-            notes = "Punto estratégico corredor Buenos Aires - Rosario.",
-            lastUpdatedMillis = System.currentTimeMillis()
-        ),
-        Station(
-            id = "station_campana",
-            remoteId = "ocm_ar_campana",
-            name = "Axion Energy Campana",
-            address = "Ruta Panamericana km 75, Campana",
-            latitude = -34.1680,
-            longitude = -58.9590,
-            connectors = listOf(
-                Connector(type = ConnectorType.CCS2, powerKw = 60.0, isCompatible = true),
-                Connector(type = ConnectorType.TYPE_2, powerKw = 22.0, isCompatible = true)
-            ),
-            availableCount = 2,
-            totalCount = 2,
-            amenities = listOf("Spot!", "Baños", "Café"),
-            operator = "Axion On",
-            notes = "Acceso por autopista.",
-            lastUpdatedMillis = System.currentTimeMillis()
-        )
-    )
 
     override suspend fun calculateRoute(
         origin: LocationPoint,
@@ -211,6 +98,9 @@ class RouteRepositoryImpl(
                 }
             }
 
+            // RF02: estaciones compatibles con el auto cerca de la ruta (OpenChargeMap o Room)
+            val stationsAlongRoute = stationRepository.getStationsAlongRoute(polylinePoints, vehicle.supportedConnectors)
+
             // Consumo: Base + penalidad del 10% si el aire acondicionado está encendido
             val acMultiplier = if (acActive) 1.10 else 1.00
             val consumptionKwhPer100Km = vehicle.baseConsumptionKwhPer100Km * acMultiplier
@@ -230,7 +120,7 @@ class RouteRepositoryImpl(
                 // Requiere al menos una parada intermedia de recarga
                 // Buscar una estación cerca de la ruta a la que se pueda llegar con la batería actual
                 val reachableKm = (availableInitialEnergyKwh / consumptionKwhPer100Km) * 100.0
-                val candidateStation = findBestStationAlongRoute(polylinePoints, vehicle, distanceKm, reachableKm)
+                val candidateStation = findBestStationAlongRoute(stationsAlongRoute, polylinePoints, distanceKm, reachableKm)
 
                 if (candidateStation == null) {
                     // No hay cargadores cerca de esta ruta: se informa la batería real, sin parada
@@ -274,8 +164,12 @@ class RouteRepositoryImpl(
                     val neededPercent = (((energyFromStation + safetyReserveKwh) / usableCapacity) * 100.0).toInt()
                     val departureBatteryAtStation = neededPercent.coerceIn(maxOf(75, arrivalBatteryAtStation), 100)
                     val energyToChargeKwh = ((departureBatteryAtStation - arrivalBatteryAtStation) / 100.0) * usableCapacity
-                    // Tiempo de carga estimado según potencia máxima de estación y vehículo
-                    val maxKw = minOf(candidateStation.connectors.maxOfOrNull { it.powerKw } ?: 50.0, vehicle.maxDcKw)
+                    // Tiempo de carga estimado según la potencia del conector compatible y la del vehículo.
+                    // Si la estación no informa potencia (0 kW), se asumen 50 kW.
+                    val stationKw = candidateStation.connectors
+                        .filter { it.type in vehicle.supportedConnectors && it.powerKw > 0 }
+                        .maxOfOrNull { it.powerKw } ?: 50.0
+                    val maxKw = minOf(stationKw, vehicle.maxDcKw)
                     val chargeTimeMin = ((energyToChargeKwh / maxKw) * 60.0).toInt().coerceIn(5, 240)
                     chargeDurationMinutes += chargeTimeMin
 
@@ -302,9 +196,6 @@ class RouteRepositoryImpl(
                 finalArrivalBatteryPercent = ((energyRemaining / usableCapacity) * 100.0).toInt().coerceIn(5, 100)
             }
 
-            // Persistir estaciones en base de datos Room
-            database.stationDao().insertStations(knownStations.map { StationMapper.toEntity(it) })
-
             val totalDurationMinutes = driveDurationMinutes + chargeDurationMinutes
 
             val routePlan = RoutePlan(
@@ -315,6 +206,7 @@ class RouteRepositoryImpl(
                 driveDurationMinutes = driveDurationMinutes,
                 chargeDurationMinutes = chargeDurationMinutes,
                 stops = stops,
+                nearbyStations = stationsAlongRoute,
                 polylinePoints = polylinePoints,
                 encodedPolyline = encodedPolyline,
                 isApproximate = isApproximate,
@@ -342,28 +234,24 @@ class RouteRepositoryImpl(
         return (d1 < 70.0 && d2 < 70.0) || (dRev1 < 70.0 && dRev2 < 70.0)
     }
 
+    // stations ya viene filtrada por StationFilter: compatibles, cerca de la ruta y en orden de recorrido
     private fun findBestStationAlongRoute(
+        stations: List<Station>,
         polyline: List<Pair<Double, Double>>,
-        vehicle: Vehicle,
         routeKm: Double,
         reachableKm: Double
     ): Station? {
-        val compatible = knownStations.filter { it.isCompatibleWith(vehicle.supportedConnectors) }
-        val pool = compatible.ifEmpty { knownStations }
+        if (stations.isEmpty()) return null
 
-        // Solo sirven las estaciones que quedan a menos de 30 km de la ruta
-        val nearStations = pool.filter { station ->
-            RouteGeometry.nearestOnRoute(polyline, station.latitude, station.longitude).distanceToRouteKm <= 30.0
+        // Kilómetro de la ruta en el que queda cada estación
+        val kmOnRoute = stations.associateWith { station ->
+            RouteGeometry.nearestOnRoute(polyline, station.latitude, station.longitude).progress * routeKm
         }
-        if (nearStations.isEmpty()) return null
 
         // De las que se llega con la batería actual, la más avanzada en el viaje.
         // Si no se llega a ninguna, la primera del camino.
-        val reachable = nearStations.filter { station ->
-            RouteGeometry.nearestOnRoute(polyline, station.latitude, station.longitude).progress * routeKm <= reachableKm
-        }
-        return reachable.maxByOrNull { RouteGeometry.nearestOnRoute(polyline, it.latitude, it.longitude).progress }
-            ?: nearStations.minByOrNull { RouteGeometry.nearestOnRoute(polyline, it.latitude, it.longitude).progress }
+        val reachable = stations.filter { kmOnRoute.getValue(it) <= reachableKm }
+        return reachable.maxByOrNull { kmOnRoute.getValue(it) } ?: stations.first()
     }
 
     private suspend fun fetchOsrmRoute(coordinates: String): OsrmRoute? {
@@ -482,14 +370,6 @@ class RouteRepositoryImpl(
         val hour = (totalMin / 60) % 24
         val min = totalMin % 60
         return String.format("%02d:%02d", hour, min)
-    }
-
-    override suspend fun getStationsAlongRoute(
-        polyline: List<Pair<Double, Double>>,
-        vehicle: Vehicle
-    ): List<Station> = withContext(Dispatchers.IO) {
-        val compatible = knownStations.filter { it.isCompatibleWith(vehicle.supportedConnectors) }
-        compatible.ifEmpty { knownStations }
     }
 
     override fun getOfflineRoute(tripId: String): Flow<RoutePlan?> = flow {
