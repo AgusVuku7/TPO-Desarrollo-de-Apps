@@ -146,7 +146,24 @@ fun RouteMapView(
                     }
                     map.overlays.add(destMarker)
 
-                    // 4. Charging Station Markers (Dolores, etc.)
+                    // 4. RF02: estaciones compatibles cerca de la ruta (mas transparentes que la parada).
+                    // Se dibujan antes que las paradas para que la parada quede arriba.
+                    val stopStationIds = routePlan.stops.map { it.station.id }.toSet()
+                    routePlan.nearbyStations
+                        .filter { it.id !in stopStationIds }
+                        .forEach { station ->
+                            val nearbyMarker = Marker(map).apply {
+                                position = GeoPoint(station.latitude, station.longitude)
+                                icon = ContextCompat.getDrawable(context, R.drawable.ic_map_bolt)
+                                alpha = 0.55f
+                                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                                title = station.name
+                                snippet = stationSnippet(station)
+                            }
+                            map.overlays.add(nearbyMarker)
+                        }
+
+                    // 5. Paradas de carga planificadas
                     routePlan.stops.forEach { stop ->
                         val stationGeo = GeoPoint(stop.station.latitude, stop.station.longitude)
                         val stationMarker = Marker(map).apply {
@@ -154,8 +171,7 @@ fun RouteMapView(
                             icon = ContextCompat.getDrawable(context, R.drawable.ic_map_bolt) // rayo = aca se carga
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             title = stop.station.name
-                            val kw = stop.station.connectors.firstOrNull()?.powerKw?.toInt() ?: 120
-                            snippet = "${stop.station.operator} • DC $kw kW • Parada ${stop.stopDurationMinutes} min"
+                            snippet = "${stationSnippet(stop.station)} • Parada ${stop.stopDurationMinutes} min"
                             setOnMarkerClickListener { _, _ ->
                                 onStationClick?.invoke(stop.station)
                                 true
@@ -164,7 +180,7 @@ fun RouteMapView(
                         map.overlays.add(stationMarker)
                     }
 
-                    // 5. Active Car Marker along the polyline
+                    // 6. Active Car Marker along the polyline
                     if (activeCarProgress != null) {
                         val carMarker = Marker(map).apply {
                             position = originGeo
@@ -258,4 +274,12 @@ fun RouteMapView(
             }
         }
     }
+}
+
+// Texto corto del cartel de una estacion: operador, conectores y potencia maxima
+private fun stationSnippet(station: Station): String {
+    val connectors = station.connectors.map { it.type.displayName }.distinct().joinToString(", ")
+    val maxKw = station.connectors.maxOfOrNull { it.powerKw } ?: 0.0
+    val power = if (maxKw > 0) " • hasta ${maxKw.toInt()} kW" else ""
+    return "${station.operator} • $connectors$power"
 }
