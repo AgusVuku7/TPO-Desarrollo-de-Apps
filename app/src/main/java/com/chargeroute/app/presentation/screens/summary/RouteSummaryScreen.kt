@@ -48,6 +48,7 @@ import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.presentation.components.BatteryLevelBadge
+import com.chargeroute.app.presentation.components.formatDuration
 import com.chargeroute.app.presentation.components.RouteMapView
 import com.chargeroute.app.presentation.components.StepProgressIndicator
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
@@ -267,7 +268,7 @@ fun RouteSummaryScreen(
                             val mins = plan.totalDurationMinutes % 60
                             Column {
                                 Text(
-                                    text = "${hours} h ${mins}",
+                                    text = formatDuration(plan.totalDurationMinutes),
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -298,7 +299,7 @@ fun RouteSummaryScreen(
                         val driveH = plan.driveDurationMinutes / 60
                         val driveM = plan.driveDurationMinutes % 60
                         Text(
-                            text = "${driveH} h ${driveM} de viaje • ${plan.chargeDurationMinutes} min de carga",
+                            text = "${formatDuration(plan.driveDurationMinutes)} de viaje • ${formatDuration(plan.chargeDurationMinutes)} de carga",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
