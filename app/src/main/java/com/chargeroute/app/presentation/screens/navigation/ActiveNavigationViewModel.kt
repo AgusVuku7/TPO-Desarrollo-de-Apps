@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.core.location.LocationClient
 import com.chargeroute.app.domain.model.NavStep
+import com.chargeroute.app.domain.model.RangeEstimator
+import com.chargeroute.app.domain.model.ReachEstimate
 import com.chargeroute.app.domain.model.RouteGeometry
 import com.chargeroute.app.domain.model.Trip
 import com.chargeroute.app.domain.model.TripStop
@@ -53,6 +55,28 @@ data class ActiveNavigationUiState(
     // Lugar de la ruta donde esta la proxima parada
     val stopProgress: Float?
         get() = stopProgresses.getOrNull(nextStopIndex)
+
+    /**
+     * RF03: con la bateria actual, ¿se llega a la proxima parada o al destino?
+     * Si se esta cargando, el objetivo es la parada siguiente (o el destino).
+     */
+    val reachEstimate: ReachEstimate?
+        get() {
+            val currentTrip = trip ?: return null
+            if (isArrived) return null
+            val targetIndex = if (isCharging) nextStopIndex + 1 else nextStopIndex
+            val targetProgress = stopProgresses.getOrNull(targetIndex) ?: 1f
+            val targetName = currentTrip.routePlan.stops.getOrNull(targetIndex)?.station?.name
+                ?: currentTrip.destination.name
+            val kmToTarget = ((targetProgress - progress) * currentTrip.routePlan.distanceKm).coerceAtLeast(0.0)
+            return RangeEstimator.estimate(
+                targetName = targetName,
+                kmToTarget = kmToTarget,
+                batteryPercent = currentBatteryPercent,
+                usableBatteryKwh = currentTrip.vehicle.usableBatteryKwh,
+                consumptionKwhPer100Km = currentTrip.routePlan.consumptionKwhPer100Km
+            )
+        }
 }
 
 class ActiveNavigationViewModel(
