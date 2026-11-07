@@ -569,7 +569,7 @@ fun RoutePlanningScreen(
                             "${plan.distanceKm.toInt()} km • sin paradas de carga"
                         } else {
                             "${plan.distanceKm.toInt()} km" +
-                                (if (plan.detourKm > 0) " (+${plan.detourKm} km de desvío)" else "") +
+                                (if (plan.detourKm > 0) " (incluye ${plan.detourKm} km de desvío para cargar)" else "") +
                                 " • parada en " + plan.stops.joinToString { it.station.name }
                         },
                         style = MaterialTheme.typography.bodySmall,
