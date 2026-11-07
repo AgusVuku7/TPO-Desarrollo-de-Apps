@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import com.chargeroute.app.core.theme.BatteryOrange
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.presentation.components.BatteryLevelBadge
+import com.chargeroute.app.presentation.components.formatDuration
 import com.chargeroute.app.presentation.components.RouteMapView
 
 // Colores del cartel de indicaciones
@@ -304,7 +305,7 @@ fun ActiveNavigationScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "${minutesLeft / 60} h ${minutesLeft % 60} min",
+                                    text = formatDuration(minutesLeft),
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )

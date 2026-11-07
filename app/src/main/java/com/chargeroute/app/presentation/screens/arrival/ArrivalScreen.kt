@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.domain.model.Trip
+import com.chargeroute.app.presentation.components.formatDuration
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
 import java.util.Locale
 
@@ -240,12 +241,9 @@ fun ArrivalScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-
-                        val h = (plan?.totalDurationMinutes ?: 345) / 60
-                        val m = (plan?.totalDurationMinutes ?: 345) % 60
                         Column {
                             Text(
-                                text = "${h} h ${m}",
+                                text = formatDuration(plan?.totalDurationMinutes ?: 0),
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -272,10 +270,11 @@ fun ArrivalScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    val driveH = (plan?.driveDurationMinutes ?: 310) / 60
-                    val driveM = (plan?.driveDurationMinutes ?: 310) % 60
+                    // Energia usada = distancia x consumo del viaje
+
+                    val usedKwh = plan?.let { it.distanceKm * it.consumptionKwhPer100Km / 100.0 } ?: 0.0
                     Text(
-                        text = "${driveH} h ${driveM} de manejo • ${plan?.chargeDurationMinutes ?: 35} min de carga • 64,2 kWh usados",
+                        text = "${formatDuration(plan?.driveDurationMinutes ?: 0)} de manejo • ${formatDuration(plan?.chargeDurationMinutes ?: 0)} de carga • ${"%.1f".format(usedKwh)} kWh usados",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
