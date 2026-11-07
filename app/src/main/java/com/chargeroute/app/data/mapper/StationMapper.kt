@@ -73,40 +73,58 @@ object StationMapper {
         )
     }
 
-    fun fromOcmDto(dto: OcmPoiResponse): Station {
-        val addressInfo = dto.addressInfo
-        val name = addressInfo?.title ?: "Estación de carga"
-        val address = listOfNotNull(addressInfo?.addressLine1, addressInfo?.town, addressInfo?.stateOrProvince).joinToString(", ")
-        val lat = addressInfo?.latitude ?: 0.0
-        val lng = addressInfo?.longitude ?: 0.0
+    // Convierte una estacion de OpenChargeMap al modelo de la app.
+    // Devuelve null si la estacion no trae ubicacion.
+    fun fromOcmDto(dto: OcmPoiResponse): Station? {
+        val addressInfo = dto.addressInfo ?: return null
+        val address = listOfNotNull(addressInfo.addressLine1, addressInfo.town, addressInfo.stateOrProvince)
+            .filter { it.isNotBlank() }
+            .joinToString(", ")
 
-        val connectors = dto.connections?.mapNotNull { conn ->
-            val typeTitle = conn.connectionType?.title ?: conn.connectionType?.formalName ?: "CCS2"
-            val type = when {
-                typeTitle.contains("CCS", ignoreCase = true) -> ConnectorType.CCS2
-                typeTitle.contains("Type 2", ignoreCase = true) || typeTitle.contains("Mennekes", ignoreCase = true) -> ConnectorType.TYPE_2
-                typeTitle.contains("CHAdeMO", ignoreCase = true) -> ConnectorType.CHADEMO
-                typeTitle.contains("Tesla", ignoreCase = true) -> ConnectorType.TESLA
-                else -> ConnectorType.CCS2
-            }
-            Connector(type = type, powerKw = conn.powerKw ?: 50.0, isCompatible = true)
-        } ?: listOf(Connector(type = ConnectorType.CCS2, powerKw = 120.0))
+        // Los conectores que la app no conoce se descartan (antes se tomaban como CCS2)
+        val connectors = dto.connections.orEmpty().mapNotNull { conn ->
+            val type = ocmConnectorType(conn.connectionTypeId, conn.connectionType?.title)
+            type?.let { Connector(type = it, powerKw = conn.powerKw ?: 0.0) }
+        }.distinctBy { it.type to it.powerKw }
 
         return Station(
             id = "ocm_${dto.id}",
             remoteId = dto.id.toString(),
-            name = name,
-            address = if (address.isNotBlank()) address else "Ruta / Autovía",
-            latitude = lat,
-            longitude = lng,
+            name = addressInfo.title ?: "Estación de carga",
+            address = address.ifBlank { "Dirección no informada" },
+            latitude = addressInfo.latitude,
+            longitude = addressInfo.longitude,
             connectors = connectors,
-            availableCount = 2,
-            totalCount = dto.numberOfPoints ?: 4,
-            amenities = listOf("24 h", "Café", "Baños"),
-            operator = dto.operatorInfo?.title ?: "Red de Carga",
-            notes = dto.generalComments ?: "Confirmá disponibilidad y conector antes de llegar.",
+            availableCount = 0, // OpenChargeMap no informa disponibilidad en vivo
+            totalCount = dto.numberOfPoints ?: connectors.size,
+            amenities = emptyList(),
+            operator = dto.operatorInfo?.title ?: "Operador no informado",
+            notes = dto.generalComments ?: "",
             lastUpdatedMillis = System.currentTimeMillis()
         )
+    }
+
+    // OpenChargeMap identifica cada tipo de conector con un numero (ConnectionTypeID).
+    // Si el numero no se reconoce, se intenta con el nombre.
+    fun ocmConnectorType(connectionTypeId: Int?, title: String?): ConnectorType? {
+        when (connectionTypeId) {
+            33 -> return ConnectorType.CCS2            // CCS (Type 2)
+            32 -> return ConnectorType.CCS1            // CCS (Type 1)
+            25, 1036 -> return ConnectorType.TYPE_2    // Type 2 (Mennekes)
+            2 -> return ConnectorType.CHADEMO          // CHAdeMO
+            27, 30 -> return ConnectorType.TESLA       // Tesla
+            28 -> return ConnectorType.SCHUKO          // Schuko
+        }
+        val name = title ?: return null
+        return when {
+            name.contains("CCS", ignoreCase = true) && name.contains("Type 1", ignoreCase = true) -> ConnectorType.CCS1
+            name.contains("CCS", ignoreCase = true) -> ConnectorType.CCS2
+            name.contains("CHAdeMO", ignoreCase = true) -> ConnectorType.CHADEMO
+            name.contains("Tesla", ignoreCase = true) -> ConnectorType.TESLA
+            name.contains("Type 2", ignoreCase = true) || name.contains("Mennekes", ignoreCase = true) -> ConnectorType.TYPE_2
+            name.contains("Schuko", ignoreCase = true) -> ConnectorType.SCHUKO
+            else -> null
+        }
     }
 
     private data class ConnectorDto(

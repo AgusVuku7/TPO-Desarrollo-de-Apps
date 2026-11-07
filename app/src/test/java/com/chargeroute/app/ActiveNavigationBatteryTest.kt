@@ -331,4 +331,62 @@ class ActiveNavigationBatteryTest {
         assertTrue(atDestination.isArrived)
         assertFalse(atDestination.isCharging)
     }
+
+    @Test
+    fun simulation_stopsAtEveryCharger_inOrder() = runTest(testDispatcher) {
+        // Viaje con dos paradas: Chascomús y Dolores
+        val secondStation = sampleStation.copy(
+            id = "station_dolores",
+            name = "Dolores",
+            latitude = -36.3132,
+            longitude = -57.6792
+        )
+        val twoStops = sampleRoutePlan.copy(
+            stops = listOf(
+                sampleRoutePlan.stops[0],
+                TripStop(
+                    id = "stop_2",
+                    station = secondStation,
+                    orderIndex = 2,
+                    stopDurationMinutes = 20,
+                    arrivalBatteryPercent = 60,
+                    departureBatteryPercent = 90,
+                    chargedEnergyKwh = 19.2
+                )
+            ),
+            polylinePoints = listOf(
+                Pair(-34.6037, -58.3816),
+                Pair(-35.5786, -58.0125),
+                Pair(-36.3132, -57.6792),
+                Pair(-38.0055, -57.5562)
+            )
+        )
+        fakeRepository.saveTrip(createSampleTrip(id = "trip_two_stops").copy(routePlan = twoStops))
+        viewModel.loadTrip("trip_two_stops")
+        advanceUntilIdle()
+
+        // Primera parada
+        viewModel.toggleSimulation()
+        advanceUntilIdle()
+        val first = viewModel.uiState.value
+        assertTrue(first.isCharging)
+        assertEquals("stop_1", first.nextStop?.id)
+        assertEquals(80, first.currentBatteryPercent)
+
+        // Segunda parada
+        viewModel.toggleSimulation()
+        advanceUntilIdle()
+        val second = viewModel.uiState.value
+        assertTrue(second.isCharging)
+        assertEquals("stop_2", second.nextStop?.id)
+        assertEquals(90, second.currentBatteryPercent)
+        assertTrue(second.progress > first.progress)
+
+        // Destino
+        viewModel.toggleSimulation()
+        advanceUntilIdle()
+        val end = viewModel.uiState.value
+        assertTrue(end.isArrived)
+        assertEquals(null, end.nextStop)
+    }
 }

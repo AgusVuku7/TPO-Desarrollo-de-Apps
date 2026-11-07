@@ -5,7 +5,10 @@ import com.chargeroute.app.data.mapper.RouteMapper
 import com.chargeroute.app.data.mapper.StationMapper
 import com.chargeroute.app.data.mapper.TripMapper
 import com.chargeroute.app.domain.model.LocationPoint
+import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Trip
+import com.chargeroute.app.domain.model.Vehicle
+import com.chargeroute.app.domain.repository.StationRepository
 import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.domain.repository.VehicleRepository
 import kotlinx.coroutines.Dispatchers
@@ -18,8 +21,16 @@ import kotlinx.coroutines.withContext
 
 class TripRepositoryImpl(
     private val database: ChargeRouteDatabase,
-    private val vehicleRepository: VehicleRepository
+    private val vehicleRepository: VehicleRepository,
+    private val stationRepository: StationRepository
 ) : TripRepository {
+
+    // Las estaciones cercanas no se guardan con la ruta: se buscan entre las guardadas en Room.
+    // Asi el mapa del viaje muestra los cargadores aunque no haya conexion (RF04).
+    private suspend fun withNearbyStations(plan: RoutePlan, vehicle: Vehicle): RoutePlan {
+        val stations = stationRepository.getCachedStationsAlongRoute(plan.polylinePoints, vehicle.supportedConnectors)
+        return plan.copy(nearbyStations = stations)
+    }
 
     override suspend fun saveTrip(trip: Trip): Unit = withContext(Dispatchers.IO) {
         val tripEntity = TripMapper.toEntity(trip)
@@ -75,7 +86,7 @@ class TripRepositoryImpl(
         }
 
         if (plan != null) {
-            emit(TripMapper.fromEntity(tripEntity, vehicle, plan))
+            emit(TripMapper.fromEntity(tripEntity, vehicle, withNearbyStations(plan, vehicle)))
         } else {
             emit(null)
         }
@@ -121,6 +132,6 @@ class TripRepositoryImpl(
         val dest = LocationPoint(tripEntity.destName, tripEntity.destAddress, tripEntity.destLat, tripEntity.destLng)
         val plan = RouteMapper.fromEntities(origin, dest, routeEntity, stopEntities, stationMap)
 
-        emit(TripMapper.fromEntity(tripEntity, vehicle, plan))
+        emit(TripMapper.fromEntity(tripEntity, vehicle, withNearbyStations(plan, vehicle)))
     }.flowOn(Dispatchers.IO)
 }

@@ -250,7 +250,10 @@ fun AppNavHost(
                     ActiveNavigationScreen(
                         state = state,
                         onViewNextChargeClick = {
-                            val stopId = state.trip?.routePlan?.stops?.firstOrNull()?.id ?: "stop_1"
+                            // La proxima parada; si ya se pasaron todas, la ultima
+                            val stopId = state.nextStop?.id
+                                ?: state.trip?.routePlan?.stops?.lastOrNull()?.id
+                                ?: "stop_1"
                             navController.navigate(Screen.StationDetail.createRoute(tripId, stopId))
                         },
                         onBatteryUpdated = { newPercent ->
