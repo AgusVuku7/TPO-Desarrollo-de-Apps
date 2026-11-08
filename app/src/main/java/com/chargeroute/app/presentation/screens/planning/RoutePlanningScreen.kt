@@ -540,15 +540,6 @@ fun RoutePlanningScreen(
 
             // Paradas que aparecen en el mapa
             state.calculatedPlan?.let { plan ->
-                if (plan.isApproximate) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Ruta aproximada: no se pudo consultar el camino real. Tocá \"Ver en el mapa\" para reintentar.",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFB91C1C)
-                    )
-                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(

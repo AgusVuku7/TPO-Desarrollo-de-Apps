@@ -10,6 +10,8 @@ import com.chargeroute.app.data.remote.dto.OsrmStep
 import com.chargeroute.app.domain.model.NavStep
 import com.chargeroute.app.domain.model.ChargingPlanner
 import com.chargeroute.app.domain.model.LocationPoint
+import com.chargeroute.app.domain.model.NoConnectionException
+import com.chargeroute.app.domain.model.RouteServiceException
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.TripClock
 import com.chargeroute.app.domain.model.TripStop
@@ -22,10 +24,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 class RouteRepositoryImpl(
     private val database: ChargeRouteDatabase,
@@ -43,55 +41,29 @@ class RouteRepositoryImpl(
         acActive: Boolean
     ): Result<RoutePlan> = withContext(Dispatchers.IO) {
         try {
-            val isOnline = networkConnectivityObserver.isCurrentlyConnected
+            // RNF06: sin internet no se puede trazar una ruta nueva.
+            // Se avisa enseguida (sin esperar timeouts) en vez de inventar un recorrido.
+            if (!networkConnectivityObserver.isCurrentlyConnected) {
+                return@withContext Result.failure(NoConnectionException())
+            }
 
-            // Coordenadas seguras y validadas
             val origLat = origin.latitude
             val origLon = origin.longitude
             val destLat = destination.latitude
             val destLon = destination.longitude
 
-            // Distancia en línea recta entre origen y destino
-            val straightLineKm = calculateHaversineDistanceKm(origLat, origLon, destLat, destLon)
-
-            // Estimación inicial (se usa solo si no se puede consultar el camino real):
-            // las rutas suelen ser un 20 % más largas que la línea recta
-            var distanceKm: Double = straightLineKm * 1.2
-
-            var driveDurationMinutes = (distanceKm / 85.0 * 60.0).toInt().coerceAtLeast(30)
-            var polylinePoints: List<Pair<Double, Double>> = generateInterpolatedRoute(origin, destination)
-            // Se guarda codificada de verdad: si no, al leerla de Room salian puntos fuera de la ruta
-            var encodedPolyline = RouteMapper.encodePolyline(polylinePoints)
-            var isApproximate = true // pasa a false si el servidor devuelve la ruta real
-
-            if (isOnline) {
-                try {
-                    val coords = "$origLon,$origLat;$destLon,$destLat"
-                    val response = osrmApi.getRoute(coordinates = coords)
-                    if (response.isSuccessful) {
-                        val route = response.body()?.routes?.firstOrNull()
-                        if (route != null && route.distanceMeters > 1000) {
-                            val osrmDistKm = route.distanceMeters / 1000.0
-                            // Si la distancia calculada por OSRM es coherente con la línea recta (< 2.5x)
-                            // En viajes cortos la ruta real puede dar mucha mas vuelta, asi que se acepta igual
-                            if (osrmDistKm < straightLineKm * 2.5 || straightLineKm < 30.0) {
-                                distanceKm = osrmDistKm
-                                driveDurationMinutes = (route.durationSeconds / 60.0).toInt()
-                                route.geometry?.let { geom ->
-                                    encodedPolyline = geom
-                                    val decoded = RouteMapper.decodePolyline(geom)
-                                    if (decoded.isNotEmpty()) {
-                                        polylinePoints = decoded
-                                        isApproximate = false
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (_: Exception) {
-                    // Fallback transparente al modelo offline
-                }
+            // Camino real entre origen y destino (OSRM)
+            val directRoute = fetchOsrmRoute("$origLon,$origLat;$destLon,$destLat")
+            val directGeometry = directRoute?.geometry
+            val directPoints = directGeometry?.let { RouteMapper.decodePolyline(it) }.orEmpty()
+            if (directRoute == null || directGeometry == null || directPoints.isEmpty()) {
+                return@withContext Result.failure(RouteServiceException())
             }
+
+            var distanceKm = directRoute.distanceMeters / 1000.0
+            var driveDurationMinutes = (directRoute.durationSeconds / 60.0).toInt()
+            var polylinePoints: List<Pair<Double, Double>> = directPoints
+            var encodedPolyline: String = directGeometry
 
             // RF02: estaciones compatibles con el auto cerca de la ruta (OpenChargeMap o Room)
             val stationsAlongRoute = stationRepository.getStationsAlongRoute(polylinePoints, vehicle.supportedConnectors)
@@ -118,25 +90,17 @@ class RouteRepositoryImpl(
                 val viaCoords = (listOf("$origLon,$origLat") +
                         chosenStations.map { "${it.longitude},${it.latitude}" } +
                         listOf("$destLon,$destLat")).joinToString(";")
-                val viaRoute = if (isOnline) fetchOsrmRoute(viaCoords) else null
+                val viaRoute = fetchOsrmRoute(viaCoords)
                 val viaGeometry = viaRoute?.geometry
-                val viaPoints = if (viaGeometry != null) RouteMapper.decodePolyline(viaGeometry) else emptyList()
-
-                if (viaRoute != null && viaGeometry != null && viaPoints.isNotEmpty()) {
-                    distanceKm = viaRoute.distanceMeters / 1000.0
-                    driveDurationMinutes = (viaRoute.durationSeconds / 60.0).toInt()
-                    polylinePoints = viaPoints
-                    encodedPolyline = viaGeometry
-                    isApproximate = false
-                } else {
-                    // Sin internet: líneas rectas origen -> cargadores -> destino
-                    val waypoints = listOf(origin) +
-                            chosenStations.map { LocationPoint(it.name, it.address, it.latitude, it.longitude) } +
-                            listOf(destination)
-                    polylinePoints = waypoints.zipWithNext { from, to -> generateInterpolatedRoute(from, to) }.flatten()
-                    encodedPolyline = RouteMapper.encodePolyline(polylinePoints)
-                    isApproximate = true
+                val viaPoints = viaGeometry?.let { RouteMapper.decodePolyline(it) }.orEmpty()
+                if (viaRoute == null || viaGeometry == null || viaPoints.isEmpty()) {
+                    return@withContext Result.failure(RouteServiceException())
                 }
+
+                distanceKm = viaRoute.distanceMeters / 1000.0
+                driveDurationMinutes = (viaRoute.durationSeconds / 60.0).toInt()
+                polylinePoints = viaPoints
+                encodedPolyline = viaGeometry
 
                 // 3) Se recalcula sobre la ruta nueva (que incluye los desvíos) con los cargadores elegidos
                 chargingPlan = ChargingPlanner.plan(
@@ -193,12 +157,10 @@ class RouteRepositoryImpl(
                 nearbyStations = stationsAlongRoute,
                 polylinePoints = polylinePoints,
                 encodedPolyline = encodedPolyline,
-                isApproximate = isApproximate,
                 arrivalBatteryPercent = finalArrivalBatteryPercent,
                 consumptionKwhPer100Km = (consumptionKwhPer100Km * 10.0).toInt() / 10.0,
                 calculatedAtMillis = now,
-                // Sin el camino real (ruta aproximada) no se sabe el desvío
-                directDistanceKm = if (isApproximate) 0.0 else directDistanceKm,
+                directDistanceKm = directDistanceKm,
                 departureTime = clock(0),
                 arrivalTime = clock(totalDurationMinutes),
                 isLowBatteryWarning = warning != null,
@@ -353,34 +315,5 @@ class RouteRepositoryImpl(
         database.tripStopDao().deleteStopsByRouteId(routeEntity.id)
         database.tripStopDao().insertStops(stopEntities)
         Unit
-    }
-
-    private fun generateInterpolatedRoute(
-        origin: LocationPoint,
-        dest: LocationPoint
-    ): List<Pair<Double, Double>> {
-        val points = mutableListOf<Pair<Double, Double>>()
-        val steps = 30
-        for (i in 0..steps) {
-            val fraction = i.toDouble() / steps.toDouble()
-            val lat = origin.latitude + (dest.latitude - origin.latitude) * fraction
-            val lng = origin.longitude + (dest.longitude - origin.longitude) * fraction
-            points.add(Pair(lat, lng))
-        }
-        return points
-    }
-
-    private fun calculateHaversineDistanceKm(
-        lat1: Double, lon1: Double,
-        lat2: Double, lon2: Double
-    ): Double {
-        val r = 6371.0 // Radio de la Tierra en km
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val a = sin(dLat / 2) * sin(dLat / 2) +
-                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
-                sin(dLon / 2) * sin(dLon / 2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return r * c
     }
 }

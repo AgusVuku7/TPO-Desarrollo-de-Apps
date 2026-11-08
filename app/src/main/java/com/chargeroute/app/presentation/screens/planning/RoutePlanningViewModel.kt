@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.core.location.LocationClient
 import com.chargeroute.app.domain.model.LocationPoint
+import com.chargeroute.app.domain.model.NoConnectionException
+import com.chargeroute.app.domain.model.RouteServiceException
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Trip
 import com.chargeroute.app.domain.model.Vehicle
@@ -208,7 +210,7 @@ class RoutePlanningViewModel(
                 it.copy(
                     isLoading = false,
                     calculatedPlan = if (stillValid) result.getOrNull() else null,
-                    errorMessage = result.exceptionOrNull()?.let { err -> "Error al calcular ruta: ${err.localizedMessage}" }
+                    errorMessage = result.exceptionOrNull()?.let { err -> routeErrorMessage(err) }
                 )
             }
         }
@@ -386,11 +388,20 @@ class RoutePlanningViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Error al calcular ruta: ${err.localizedMessage ?: "Verificá la conexión o los parámetros"}"
+                        errorMessage = routeErrorMessage(err)
                     )
                 }
             }
         }
+    }
+
+    // RNF06: mensaje claro de que paso y que puede hacer el usuario
+    private fun routeErrorMessage(error: Throwable): String {
+        val reason = when (error) {
+            is NoConnectionException, is RouteServiceException -> error.message
+            else -> "No se pudo calcular la ruta."
+        }
+        return "$reason Podés reintentar o abrir una ruta guardada."
     }
 
     companion object {
