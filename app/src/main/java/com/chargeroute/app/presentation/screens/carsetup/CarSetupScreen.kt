@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Speed
@@ -81,7 +82,7 @@ fun CarSetupScreen(
     onVehicleSelected: (com.chargeroute.app.domain.model.Vehicle) -> Unit,
     onBatteryChanged: (Int) -> Unit,
     onAcToggled: (Boolean) -> Unit,
-    onBackClick: () -> Unit,
+    onMenuClick: () -> Unit,
     onNextClick: () -> Unit
 ) {
     val selected = state.selectedVehicle ?: return
@@ -96,12 +97,12 @@ fun CarSetupScreen(
                 title = {},
                 navigationIcon = {
                     IconButton(
-                        onClick = onBackClick,
+                        onClick = onMenuClick,
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
+                            imageVector = Icons.Filled.Menu,
+                            contentDescription = "Abrir menú",
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }

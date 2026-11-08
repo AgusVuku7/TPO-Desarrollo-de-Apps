@@ -19,17 +19,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.EvStation
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Route
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -54,15 +50,12 @@ import com.chargeroute.app.core.theme.ThemeMode
 fun SidebarDrawer(
     userName: String = "Sofía Martín",
     userEmail: String = "sofia.martin@gmail.com",
-    carName: String = "Kona Electric • 64 kWh",
     savedTripsCount: Int = 1,
     currentThemeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
     onNavigateToPlan: () -> Unit,
-    onNavigateToMyCar: () -> Unit,
     onNavigateToSavedTrips: () -> Unit,
     onNavigateToChargers: () -> Unit,
-    onNavigateToPreferences: () -> Unit,
     onLogout: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
@@ -157,12 +150,6 @@ fun SidebarDrawer(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(
-                            text = "Ver mi perfil",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = BrandPrimary,
-                            fontWeight = FontWeight.SemiBold
-                        )
                     }
                 }
 
@@ -180,16 +167,6 @@ fun SidebarDrawer(
                 )
 
                 DrawerItem(
-                    icon = Icons.Default.DirectionsCar,
-                    title = "Mi auto",
-                    subtitle = carName,
-                    onClick = {
-                        onClose()
-                        onNavigateToMyCar()
-                    }
-                )
-
-                DrawerItem(
                     icon = Icons.Default.History,
                     title = "Mis viajes",
                     badge = "$savedTripsCount",
@@ -201,26 +178,11 @@ fun SidebarDrawer(
 
                 DrawerItem(
                     icon = Icons.Default.EvStation,
-                    title = "Cargadores",
+                    title = "Mis cargadores",
                     onClick = {
                         onClose()
                         onNavigateToChargers()
                     }
-                )
-
-                DrawerItem(
-                    icon = Icons.Default.Tune,
-                    title = "Preferencias",
-                    onClick = {
-                        onClose()
-                        onNavigateToPreferences()
-                    }
-                )
-
-                DrawerItem(
-                    icon = Icons.AutoMirrored.Filled.HelpOutline,
-                    title = "Ayuda y soporte",
-                    onClick = {}
                 )
             }
 
