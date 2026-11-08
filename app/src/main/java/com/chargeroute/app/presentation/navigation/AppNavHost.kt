@@ -1,6 +1,11 @@
 package com.chargeroute.app.presentation.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalDrawerSheet
@@ -13,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -21,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.chargeroute.app.ChargeRouteApp
 import com.chargeroute.app.core.theme.ThemeMode
+import com.chargeroute.app.presentation.components.OfflineBanner
 import com.chargeroute.app.presentation.screens.arrival.ArrivalScreen
 import com.chargeroute.app.presentation.screens.carsetup.CarSetupScreen
 import com.chargeroute.app.presentation.screens.carsetup.CarSetupViewModel
@@ -58,7 +65,6 @@ fun AppNavHost(
             container.saveTripUseCase,
             container.getOfflineRouteUseCase,
             container.locationClient,
-            container.networkObserver,
             container.geocodeAddressUseCase,
             container.tripRepository
         )
@@ -125,7 +131,19 @@ fun AppNavHost(
             }
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        // RNF01: aviso de "Sin conexión" arriba de cualquier pantalla, en tiempo real
+        val isOnline by remember { container.networkObserver.observeIsOnline() }
+            .collectAsStateWithLifecycle(initialValue = true)
+
+        Column(modifier = Modifier.fillMaxSize()) {
+        OfflineBanner(visible = !isOnline)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                // Con el aviso visible, la barra de estado ya queda cubierta por el aviso
+                .then(if (!isOnline) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier)
+        ) {
             NavHost(
                 navController = navController,
                 startDestination = Screen.Login.route
@@ -323,6 +341,7 @@ fun AppNavHost(
                     )
                 }
             }
+        }
         }
     }
 }

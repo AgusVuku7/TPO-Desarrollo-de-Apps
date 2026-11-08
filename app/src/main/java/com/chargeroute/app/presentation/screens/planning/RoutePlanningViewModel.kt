@@ -3,7 +3,6 @@ package com.chargeroute.app.presentation.screens.planning
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.core.location.LocationClient
-import com.chargeroute.app.core.network.NetworkConnectivityObserver
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Trip
@@ -50,7 +49,6 @@ data class RoutePlanningUiState(
     val calculatedPlan: RoutePlan? = null,
     val errorMessage: String? = null,
     val infoNotice: String? = null,
-    val isOffline: Boolean = false,
     val createdTripId: String? = null,
     val recentTrips: List<Trip> = emptyList(),
     val addressOptions: List<LocationPoint> = emptyList(),
@@ -62,7 +60,6 @@ class RoutePlanningViewModel(
     private val saveTripUseCase: SaveTripUseCase,
     private val getOfflineRouteUseCase: GetOfflineRouteUseCase,
     private val locationClient: LocationClient,
-    private val networkObserver: NetworkConnectivityObserver,
     private val geocodeAddressUseCase: GeocodeAddressUseCase,
     private val tripRepository: TripRepository
 ) : ViewModel() {
@@ -85,7 +82,6 @@ class RoutePlanningViewModel(
     val uiState: StateFlow<RoutePlanningUiState> = _uiState.asStateFlow()
 
     init {
-        checkNetwork()
         loadRecentTrips()
     }
 
@@ -216,11 +212,6 @@ class RoutePlanningViewModel(
                 )
             }
         }
-    }
-
-    private fun checkNetwork() {
-        val connected = networkObserver.isCurrentlyConnected
-        _uiState.update { it.copy(isOffline = !connected) }
     }
 
     fun initParams(vehicle: Vehicle, batteryPercent: Int, acActive: Boolean) {
