@@ -17,5 +17,5 @@ sealed class Screen(val route: String) {
         fun createRoute(tripId: String) = "arrival/$tripId"
     }
     object SavedTrips : Screen("saved_trips")
-    object Settings : Screen("settings")
+    object UsedChargers : Screen("used_chargers")
 }

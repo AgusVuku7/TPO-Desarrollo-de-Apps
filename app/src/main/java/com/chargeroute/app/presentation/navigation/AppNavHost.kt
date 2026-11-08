@@ -38,8 +38,9 @@ import com.chargeroute.app.presentation.screens.planning.RoutePlanningScreen
 import com.chargeroute.app.presentation.screens.planning.RoutePlanningViewModel
 import com.chargeroute.app.presentation.screens.savedtrips.SavedTripsScreen
 import com.chargeroute.app.presentation.screens.savedtrips.SavedTripsViewModel
-import com.chargeroute.app.presentation.screens.settings.SettingsScreen
 import com.chargeroute.app.presentation.screens.sidebar.SidebarDrawer
+import com.chargeroute.app.presentation.screens.chargers.UsedChargersScreen
+import com.chargeroute.app.presentation.screens.chargers.UsedChargersViewModel
 import com.chargeroute.app.presentation.screens.station.StationDetailScreen
 import com.chargeroute.app.presentation.screens.summary.RouteSummaryScreen
 import com.chargeroute.app.presentation.screens.summary.RouteSummaryViewModel
@@ -90,35 +91,35 @@ fun AppNavHost(
         SavedTripsViewModel(container.tripRepository)
     }
 
+    val usedChargersViewModel: UsedChargersViewModel = viewModel {
+        UsedChargersViewModel(container.tripRepository)
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = drawerState.isOpen,
         drawerContent = {
             ModalDrawerSheet {
-                val carSetupState by carSetupViewModel.uiState.collectAsState()
-                val vehicleName = carSetupState.selectedVehicle?.displayName ?: "Kona Electric • 64 kWh"
+                val savedTrips by savedTripsViewModel.savedTrips.collectAsState()
+                // Cada vez que se abre el menu se actualiza la cantidad de viajes
+                LaunchedEffect(drawerState.isOpen) {
+                    if (drawerState.isOpen) savedTripsViewModel.refresh()
+                }
                 SidebarDrawer(
                     userName = "Sofía Martín",
                     userEmail = "sofia.martin@gmail.com",
-                    carName = vehicleName,
-                    savedTripsCount = 1,
+                    savedTripsCount = savedTrips.size,
                     currentThemeMode = currentThemeMode,
                     onThemeModeChange = onThemeModeChange,
                     // El inicio es la pantalla del auto: se vuelve a ella sin apilar copias
                     onNavigateToPlan = {
                         navController.popBackStack(Screen.CarSetup.route, inclusive = false)
                     },
-                    onNavigateToMyCar = {
-                        navController.popBackStack(Screen.CarSetup.route, inclusive = false)
-                    },
                     onNavigateToSavedTrips = {
                         navController.navigate(Screen.SavedTrips.route)
                     },
                     onNavigateToChargers = {
-                        navController.navigate(Screen.SavedTrips.route)
-                    },
-                    onNavigateToPreferences = {
-                        navController.navigate(Screen.Settings.route)
+                        navController.navigate(Screen.UsedChargers.route)
                     },
                     onLogout = {
                         scope.launch { drawerState.close() }
@@ -338,11 +339,16 @@ fun AppNavHost(
                     )
                 }
 
-                // Settings
-                composable(Screen.Settings.route) {
-                    SettingsScreen(
-                        currentThemeMode = currentThemeMode,
-                        onThemeModeChange = onThemeModeChange,
+                // Cargadores donde se paro en los viajes guardados
+                composable(Screen.UsedChargers.route) {
+                    UsedChargersScreen(
+                        viewModel = usedChargersViewModel,
+                        onChargerClick = { charger ->
+                            routeSummaryViewModel.loadTrip(charger.lastTripId)
+                            navController.navigate(
+                                Screen.StationDetail.createRoute(charger.lastTripId, charger.lastStopId)
+                            )
+                        },
                         onBackClick = { navController.popBackStack() }
                     )
                 }
