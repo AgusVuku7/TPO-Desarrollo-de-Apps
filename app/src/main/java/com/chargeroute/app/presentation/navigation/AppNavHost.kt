@@ -225,7 +225,8 @@ fun AppNavHost(
                             activeNavigationViewModel.loadTrip(tripId)
                             navController.navigate(Screen.ActiveNavigation.createRoute(tripId))
                         },
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = { navController.popBackStack() },
+                        isOffline = !isOnline
                     )
                 }
 

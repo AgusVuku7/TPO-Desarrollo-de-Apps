@@ -45,7 +45,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chargeroute.app.core.theme.BatteryGreen
+import com.chargeroute.app.core.theme.BatteryOrange
 import com.chargeroute.app.core.theme.BrandPrimary
+import com.chargeroute.app.domain.model.DataFreshness
 import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.presentation.components.BatteryLevelBadge
 import com.chargeroute.app.presentation.components.formatDuration
@@ -60,7 +62,8 @@ fun RouteSummaryScreen(
     state: RouteSummaryUiState,
     onStopClick: (TripStop) -> Unit,
     onStartTripClick: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    isOffline: Boolean = false
 ) {
     val trip = state.trip
     val plan = trip?.routePlan
@@ -134,6 +137,21 @@ fun RouteSummaryScreen(
                                 fontWeight = FontWeight.Bold
                             )
                         }
+                    }
+
+                    // Offline First: sin conexion se avisa desde cuando estan guardados los cargadores
+                    val stationsDate = plan?.let { DataFreshness.oldestStationUpdate(it) }
+                    if (isOffline && stationsDate != null) {
+                        val stale = DataFreshness.isStale(stationsDate)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Sin conexión • cargadores guardados el ${DataFreshness.formatDate(stationsDate)}" +
+                                if (stale) " (pueden estar desactualizados)" else "",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (stale) BatteryOrange else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
