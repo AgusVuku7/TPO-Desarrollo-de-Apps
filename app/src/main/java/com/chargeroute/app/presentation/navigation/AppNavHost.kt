@@ -104,11 +104,12 @@ fun AppNavHost(
                     savedTripsCount = 1,
                     currentThemeMode = currentThemeMode,
                     onThemeModeChange = onThemeModeChange,
+                    // El inicio es la pantalla del auto: se vuelve a ella sin apilar copias
                     onNavigateToPlan = {
-                        navController.navigate(Screen.CarSetup.route)
+                        navController.popBackStack(Screen.CarSetup.route, inclusive = false)
                     },
                     onNavigateToMyCar = {
-                        navController.navigate(Screen.CarSetup.route)
+                        navController.popBackStack(Screen.CarSetup.route, inclusive = false)
                     },
                     onNavigateToSavedTrips = {
                         navController.navigate(Screen.SavedTrips.route)
@@ -120,6 +121,7 @@ fun AppNavHost(
                         navController.navigate(Screen.Settings.route)
                     },
                     onLogout = {
+                        scope.launch { drawerState.close() }
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
@@ -152,7 +154,10 @@ fun AppNavHost(
                 composable(Screen.Login.route) {
                     LoginScreen(
                         onLoginSuccess = {
-                            navController.navigate(Screen.CarSetup.route)
+                            // Sin volver al login con "atrás"; para eso está Cerrar sesión
+                            navController.navigate(Screen.CarSetup.route) {
+                                popUpTo(Screen.Login.route) { inclusive = true }
+                            }
                         }
                     )
                 }
@@ -165,7 +170,7 @@ fun AppNavHost(
                         onVehicleSelected = { carSetupViewModel.selectVehicle(it) },
                         onBatteryChanged = { carSetupViewModel.updateBatteryPercent(it) },
                         onAcToggled = { carSetupViewModel.toggleAc(it) },
-                        onBackClick = { navController.popBackStack() },
+                        onMenuClick = { scope.launch { drawerState.open() } },
                         onNextClick = {
                             state.selectedVehicle?.let { vehicle ->
                                 routePlanningViewModel.initParams(
