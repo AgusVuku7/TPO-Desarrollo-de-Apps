@@ -3,8 +3,9 @@ package com.chargeroute.app.presentation.screens.planning
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.core.location.LocationClient
-import com.chargeroute.app.core.network.NetworkConnectivityObserver
 import com.chargeroute.app.domain.model.LocationPoint
+import com.chargeroute.app.domain.model.NoConnectionException
+import com.chargeroute.app.domain.model.RouteServiceException
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Trip
 import com.chargeroute.app.domain.model.Vehicle
@@ -50,7 +51,6 @@ data class RoutePlanningUiState(
     val calculatedPlan: RoutePlan? = null,
     val errorMessage: String? = null,
     val infoNotice: String? = null,
-    val isOffline: Boolean = false,
     val createdTripId: String? = null,
     val recentTrips: List<Trip> = emptyList(),
     val addressOptions: List<LocationPoint> = emptyList(),
@@ -62,7 +62,6 @@ class RoutePlanningViewModel(
     private val saveTripUseCase: SaveTripUseCase,
     private val getOfflineRouteUseCase: GetOfflineRouteUseCase,
     private val locationClient: LocationClient,
-    private val networkObserver: NetworkConnectivityObserver,
     private val geocodeAddressUseCase: GeocodeAddressUseCase,
     private val tripRepository: TripRepository
 ) : ViewModel() {
@@ -85,7 +84,6 @@ class RoutePlanningViewModel(
     val uiState: StateFlow<RoutePlanningUiState> = _uiState.asStateFlow()
 
     init {
-        checkNetwork()
         loadRecentTrips()
     }
 
@@ -212,15 +210,10 @@ class RoutePlanningViewModel(
                 it.copy(
                     isLoading = false,
                     calculatedPlan = if (stillValid) result.getOrNull() else null,
-                    errorMessage = result.exceptionOrNull()?.let { err -> "Error al calcular ruta: ${err.localizedMessage}" }
+                    errorMessage = result.exceptionOrNull()?.let { err -> routeErrorMessage(err) }
                 )
             }
         }
-    }
-
-    private fun checkNetwork() {
-        val connected = networkObserver.isCurrentlyConnected
-        _uiState.update { it.copy(isOffline = !connected) }
     }
 
     fun initParams(vehicle: Vehicle, batteryPercent: Int, acActive: Boolean) {
@@ -395,11 +388,20 @@ class RoutePlanningViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Error al calcular ruta: ${err.localizedMessage ?: "Verificá la conexión o los parámetros"}"
+                        errorMessage = routeErrorMessage(err)
                     )
                 }
             }
         }
+    }
+
+    // RNF06: mensaje claro de que paso y que puede hacer el usuario
+    private fun routeErrorMessage(error: Throwable): String {
+        val reason = when (error) {
+            is NoConnectionException, is RouteServiceException -> error.message
+            else -> "No se pudo calcular la ruta."
+        }
+        return "$reason Podés reintentar o abrir una ruta guardada."
     }
 
     companion object {
