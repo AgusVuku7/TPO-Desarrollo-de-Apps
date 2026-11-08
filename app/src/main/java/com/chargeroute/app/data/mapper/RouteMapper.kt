@@ -5,6 +5,7 @@ import com.chargeroute.app.data.local.entity.TripStopEntity
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Station
+import com.chargeroute.app.domain.model.TripClock
 import com.chargeroute.app.domain.model.TripStop
 
 object RouteMapper {
@@ -20,7 +21,8 @@ object RouteMapper {
             chargeDurationMinutes = plan.chargeDurationMinutes,
             arrivalBatteryPercent = plan.arrivalBatteryPercent,
             consumptionKwhPer100Km = plan.consumptionKwhPer100Km,
-            calculatedAtMillis = System.currentTimeMillis()
+            calculatedAtMillis = plan.calculatedAtMillis,
+            directDistanceKm = plan.directDistanceKm
         )
     }
 
@@ -77,6 +79,11 @@ object RouteMapper {
             encodedPolyline = routeEntity.encodedPolyline,
             arrivalBatteryPercent = routeEntity.arrivalBatteryPercent,
             consumptionKwhPer100Km = routeEntity.consumptionKwhPer100Km,
+            // Los horarios se recalculan a partir del momento en que se calculo la ruta
+            calculatedAtMillis = routeEntity.calculatedAtMillis,
+            directDistanceKm = routeEntity.directDistanceKm,
+            departureTime = TripClock.at(routeEntity.calculatedAtMillis, 0),
+            arrivalTime = TripClock.at(routeEntity.calculatedAtMillis, routeEntity.totalDurationMinutes),
             isLowBatteryWarning = routeEntity.arrivalBatteryPercent < 20,
             warningMessage = if (routeEntity.arrivalBatteryPercent < 20) {
                 "Batería baja al llegar: ${routeEntity.arrivalBatteryPercent}%. Mantené la parada en ${stops.firstOrNull()?.station?.name ?: "estación de recarga"}."

@@ -15,9 +15,17 @@ data class RoutePlan(
     val encodedPolyline: String,
     val arrivalBatteryPercent: Int,
     val consumptionKwhPer100Km: Double,
-    val departureTime: String = "09:41",
-    val arrivalTime: String = "15:26",
+    // Momento en que se calculo la ruta: se toma como hora de salida
+    val calculatedAtMillis: Long = System.currentTimeMillis(),
+    val departureTime: String = "",
+    val arrivalTime: String = "",
     val isLowBatteryWarning: Boolean = false,
     val warningMessage: String? = null,
-    val isApproximate: Boolean = false // true si no se pudo consultar el camino real
-)
+    val isApproximate: Boolean = false, // true si no se pudo consultar el camino real
+    // Distancia del camino directo, sin pasar por los cargadores (0 = sin dato)
+    val directDistanceKm: Double = 0.0
+) {
+    // Km extra por salir de la ruta para ir a cargar
+    val detourKm: Int
+        get() = if (directDistanceKm > 0) (distanceKm - directDistanceKm).toInt().coerceAtLeast(0) else 0
+}

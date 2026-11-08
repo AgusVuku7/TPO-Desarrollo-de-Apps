@@ -11,6 +11,7 @@ import com.chargeroute.app.domain.model.NavStep
 import com.chargeroute.app.domain.model.ChargingPlanner
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.RoutePlan
+import com.chargeroute.app.domain.model.TripClock
 import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.repository.RouteRepository
@@ -50,17 +51,12 @@ class RouteRepositoryImpl(
             val destLat = destination.latitude
             val destLon = destination.longitude
 
-            // Distancia geodésica base
+            // Distancia en línea recta entre origen y destino
             val straightLineKm = calculateHaversineDistanceKm(origLat, origLon, destLat, destLon)
 
-            // Detección de ruta conocida Buenos Aires - Mar del Plata (Autovía 2 ~404 km)
-            val isBaToMdp = isCorridor(origLat, origLon, destLat, destLon, -34.6, -58.38, -38.0, -57.54)
-
-            var distanceKm: Double = when {
-                isBaToMdp -> 404.0
-                straightLineKm in 40.0..80.0 -> straightLineKm * 1.15
-                else -> straightLineKm * 1.18 // Factor de tortuosidad vial típico argentino
-            }
+            // Estimación inicial (se usa solo si no se puede consultar el camino real):
+            // las rutas suelen ser un 20 % más largas que la línea recta
+            var distanceKm: Double = straightLineKm * 1.2
 
             var driveDurationMinutes = (distanceKm / 85.0 * 60.0).toInt().coerceAtLeast(30)
             var polylinePoints: List<Pair<Double, Double>> = generateInterpolatedRoute(origin, destination)
@@ -113,6 +109,9 @@ class RouteRepositoryImpl(
                 initialBatteryPercent = initialBatteryPercent
             )
 
+            // Distancia del camino directo (para mostrar cuánto se desvía para cargar)
+            val directDistanceKm = distanceKm
+
             // 2) Si hay paradas, la ruta tiene que pasar por los cargadores elegidos
             if (chargingPlan.stops.isNotEmpty()) {
                 val chosenStations = chargingPlan.stops.map { it.station }
@@ -149,8 +148,10 @@ class RouteRepositoryImpl(
                 )
             }
 
-            // Paradas con su horario estimado (manejo hasta ahí + cargas anteriores)
+            // Paradas con su horario estimado (manejo hasta ahí + cargas anteriores).
+            // La salida se toma como el momento en que se calcula la ruta.
             val now = System.currentTimeMillis()
+            fun clock(minutes: Int) = TripClock.at(now, minutes)
             var previousChargeMinutes = 0
             val stops = chargingPlan.stops.mapIndexed { index, planned ->
                 val driveMinutes = if (distanceKm > 0) ((planned.km / distanceKm) * driveDurationMinutes).toInt() else 0
@@ -164,8 +165,8 @@ class RouteRepositoryImpl(
                     arrivalBatteryPercent = planned.arrivalBatteryPercent,
                     departureBatteryPercent = planned.departureBatteryPercent,
                     chargedEnergyKwh = planned.chargedEnergyKwh,
-                    arrivalTime = calculateArrivalTime(minutesToStop),
-                    departureTime = calculateArrivalTime(minutesToStop + planned.chargeMinutes)
+                    arrivalTime = clock(minutesToStop),
+                    departureTime = clock(minutesToStop + planned.chargeMinutes)
                 )
             }
 
@@ -195,8 +196,11 @@ class RouteRepositoryImpl(
                 isApproximate = isApproximate,
                 arrivalBatteryPercent = finalArrivalBatteryPercent,
                 consumptionKwhPer100Km = (consumptionKwhPer100Km * 10.0).toInt() / 10.0,
-                departureTime = "09:41",
-                arrivalTime = calculateArrivalTime(totalDurationMinutes),
+                calculatedAtMillis = now,
+                // Sin el camino real (ruta aproximada) no se sabe el desvío
+                directDistanceKm = if (isApproximate) 0.0 else directDistanceKm,
+                departureTime = clock(0),
+                arrivalTime = clock(totalDurationMinutes),
                 isLowBatteryWarning = warning != null,
                 warningMessage = warning
             )
@@ -205,14 +209,6 @@ class RouteRepositoryImpl(
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    private fun isCorridor(lat1: Double, lon1: Double, lat2: Double, lon2: Double, tLat1: Double, tLon1: Double, tLat2: Double, tLon2: Double): Boolean {
-        val d1 = calculateHaversineDistanceKm(lat1, lon1, tLat1, tLon1)
-        val d2 = calculateHaversineDistanceKm(lat2, lon2, tLat2, tLon2)
-        val dRev1 = calculateHaversineDistanceKm(lat1, lon1, tLat2, tLon2)
-        val dRev2 = calculateHaversineDistanceKm(lat2, lon2, tLat1, tLon1)
-        return (d1 < 70.0 && d2 < 70.0) || (dRev1 < 70.0 && dRev2 < 70.0)
     }
 
     private suspend fun fetchOsrmRoute(coordinates: String): OsrmRoute? {
@@ -308,7 +304,11 @@ class RouteRepositoryImpl(
     override suspend fun geocodeAddress(address: String): List<LocationPoint> = withContext(Dispatchers.IO) {
         val response = RetrofitClient.nominatimApi.search(address)
         val results = if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
-        results.mapNotNull { result ->
+        results
+            // Una provincia o un pais no sirven como destino: su punto es el centro del territorio
+            // (por ejemplo "Córdoba, Argentina" queda 70 km antes de la ciudad)
+            .filter { it.addressType !in listOf("state", "region", "country") }
+            .mapNotNull { result ->
             val lat = result.lat?.toDoubleOrNull()
             val lon = result.lon?.toDoubleOrNull()
             if (lat == null || lon == null) {
@@ -322,15 +322,6 @@ class RouteRepositoryImpl(
                 )
             }
         }.distinctBy { it.address }
-    }
-
-    private fun calculateArrivalTime(durationMinutes: Int): String {
-        val startHour = 9
-        val startMin = 41
-        val totalMin = startHour * 60 + startMin + durationMinutes
-        val hour = (totalMin / 60) % 24
-        val min = totalMin % 60
-        return String.format("%02d:%02d", hour, min)
     }
 
     override fun getOfflineRoute(tripId: String): Flow<RoutePlan?> = flow {

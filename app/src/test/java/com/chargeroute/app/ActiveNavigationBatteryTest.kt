@@ -333,6 +333,26 @@ class ActiveNavigationBatteryTest {
     }
 
     @Test
+    fun updateBattery_recalculatesIfTheNextStopIsReachable() = runTest(testDispatcher) {
+        // RF03: hasta Chascomús hay ~118 km y el Kona gasta ~31 % en ese tramo
+        fakeRepository.saveTrip(createSampleTrip(id = "trip_rf03", currentBatteryPercent = 70))
+        viewModel.loadTrip("trip_rf03")
+        advanceUntilIdle()
+
+        val withEnough = viewModel.uiState.value.reachEstimate!!
+        assertEquals(sampleStation.name, withEnough.targetName)
+        assertTrue(withEnough.reachesWithReserve)
+
+        // El conductor ingresa 20 %: ya no alcanza para llegar al cargador
+        viewModel.updateBattery(20)
+        advanceUntilIdle()
+
+        val withLow = viewModel.uiState.value.reachEstimate!!
+        assertFalse(withLow.reaches)
+        assertTrue(withLow.arrivalBatteryPercent < 0)
+    }
+
+    @Test
     fun simulation_stopsAtEveryCharger_inOrder() = runTest(testDispatcher) {
         // Viaje con dos paradas: Chascomús y Dolores
         val secondStation = sampleStation.copy(

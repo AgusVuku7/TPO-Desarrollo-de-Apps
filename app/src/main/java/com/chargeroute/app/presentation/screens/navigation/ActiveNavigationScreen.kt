@@ -55,7 +55,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BatteryOrange
+import com.chargeroute.app.core.theme.BatteryRed
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.presentation.components.BatteryLevelBadge
 import com.chargeroute.app.presentation.components.formatDuration
@@ -260,10 +262,20 @@ fun ActiveNavigationScreen(
                     }
                 }
 
-                if (state.isLowBatteryWarning) {
+                // RF03: aviso segun si la bateria alcanza para el proximo objetivo
+                val reach = state.reachEstimate
+                val alertText = when {
+                    reach != null && !reach.reaches ->
+                        "No alcanza para llegar a ${reach.targetName}: faltan ~${-reach.arrivalBatteryPercent}% de batería"
+                    reach != null && !reach.reachesWithReserve ->
+                        "Llegás justo a ${reach.targetName} (~${reach.arrivalBatteryPercent}%)"
+                    state.isLowBatteryWarning -> "Batería baja: ${state.currentBatteryPercent}%"
+                    else -> null
+                }
+                if (alertText != null) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = BatteryOrange,
+                        color = if (reach != null && !reach.reaches) BatteryRed else BatteryOrange,
                         shadowElevation = 4.dp,
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -279,7 +291,7 @@ fun ActiveNavigationScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Batería baja: ${state.currentBatteryPercent}%",
+                                text = alertText,
                                 color = Color.White,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold
@@ -320,6 +332,26 @@ fun ActiveNavigationScreen(
                             BatteryLevelBadge(
                                 percent = state.currentBatteryPercent,
                                 modifier = Modifier.clickable { showBatteryControls = !showBatteryControls }
+                            )
+                        }
+
+                        // RF03: alcance con la bateria actual (se recalcula al ajustar el %)
+                        reach?.let {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (it.reaches) {
+                                    "Llegás a ${it.targetName} con ~${it.arrivalBatteryPercent}% • autonomía ~${it.rangeKm} km"
+                                } else {
+                                    "No llegás a ${it.targetName} (${it.kmToTarget} km) • autonomía ~${it.rangeKm} km"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = when {
+                                    !it.reaches -> BatteryRed
+                                    !it.reachesWithReserve -> BatteryOrange
+                                    else -> BatteryGreen
+                                },
+                                maxLines = 2
                             )
                         }
 
