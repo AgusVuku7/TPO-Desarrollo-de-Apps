@@ -318,6 +318,15 @@ class RoutePlanningViewModel(
         }
     }
 
+    // Sin permiso de ubicacion se avisa y el origen se puede escribir a mano
+    fun onLocationPermissionDenied() {
+        _uiState.update {
+            it.copy(
+                infoNotice = "No diste permiso de ubicación. Escribí el origen a mano o activalo desde Ajustes."
+            )
+        }
+    }
+
     /**
      * Obtiene la ubicación por GPS con protección ante emuladores en EE.UU. (Mountain View)
      */

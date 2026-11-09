@@ -198,6 +198,7 @@ fun AppNavHost(
                         onAddressOptionClick = { routePlanningViewModel.selectAddressOption(it) },
                         onSwapClick = { routePlanningViewModel.swapOriginDestination() },
                         onGpsClick = { routePlanningViewModel.useCurrentLocationAsOrigin() },
+                        onLocationPermissionDenied = { routePlanningViewModel.onLocationPermissionDenied() },
                         onCalculateClick = {
                             routePlanningViewModel.calculateRoute { tripId ->
                                 routeSummaryViewModel.loadTrip(tripId)
