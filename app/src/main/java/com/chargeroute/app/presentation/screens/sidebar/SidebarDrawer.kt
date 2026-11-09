@@ -197,7 +197,7 @@ fun SidebarDrawer(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // Theme Mode Selector Tabs: Claro | Oscuro | Sensor
+                // Theme Mode Selector Tabs: Claro | Oscuro | Auto
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -217,7 +217,7 @@ fun SidebarDrawer(
                         onClick = { onThemeModeChange(ThemeMode.DARK) }
                     )
                     ThemeTab(
-                        title = "Sensor",
+                        title = "Auto",
                         selected = currentThemeMode == ThemeMode.AUTO_SENSOR,
                         onClick = { onThemeModeChange(ThemeMode.AUTO_SENSOR) }
                     )

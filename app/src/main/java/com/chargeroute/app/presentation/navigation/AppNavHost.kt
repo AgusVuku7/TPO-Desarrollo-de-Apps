@@ -18,6 +18,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -85,6 +87,14 @@ fun AppNavHost(
             container.locationClient,
             container.getNavigationStepsUseCase
         )
+    }
+
+    // El GPS se pausa cuando la app sale de pantalla y se retoma al volver (RNF05)
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        activeNavigationViewModel.pauseGpsTracking()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        activeNavigationViewModel.resumeGpsTracking()
     }
 
     val savedTripsViewModel: SavedTripsViewModel = viewModel {
