@@ -216,6 +216,34 @@ class RoutePlanningViewModel(
         }
     }
 
+    private var defaultOriginTried = false
+
+    // Al abrir la pantalla intenta poner la ubicacion actual como origen.
+    // Si no hay permiso, no hay señal o no esta en Argentina, queda el origen de siempre.
+    fun loadDefaultOrigin() {
+        if (defaultOriginTried) return
+        defaultOriginTried = true
+        if (!locationClient.hasPermission()) return
+        val untouchedText = _uiState.value.originInputText
+        viewModelScope.launch {
+            val loc = locationClient.getCurrentLocation() ?: return@launch
+            val inArgentina = loc.latitude in -56.0..-21.0 && loc.longitude in -74.0..-53.0
+            if (!inArgentina) return@launch
+            // Si mientras tanto el usuario escribio otro origen, no se lo pisa
+            if (_uiState.value.originInputText != untouchedText) return@launch
+            val point = LocationPoint(
+                name = "Mi ubicación GPS",
+                address = String.format("Lat: %.4f, Lon: %.4f", loc.latitude, loc.longitude),
+                latitude = loc.latitude,
+                longitude = loc.longitude
+            )
+            _uiState.update {
+                it.copy(origin = point, originInputText = point.name, calculatedPlan = null)
+            }
+            previewRoute()
+        }
+    }
+
     fun initParams(vehicle: Vehicle, batteryPercent: Int, acActive: Boolean) {
         _uiState.update {
             // Si cambio el auto o la bateria, las paradas de la vista previa ya no sirven
