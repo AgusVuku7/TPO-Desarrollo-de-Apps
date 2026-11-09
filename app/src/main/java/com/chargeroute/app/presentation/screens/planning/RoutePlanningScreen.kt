@@ -1,5 +1,9 @@
 package com.chargeroute.app.presentation.screens.planning
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,10 +59,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.domain.model.LocationPoint
@@ -76,6 +82,7 @@ fun RoutePlanningScreen(
     onDestinationTextChange: (String) -> Unit,
     onSwapClick: () -> Unit,
     onGpsClick: () -> Unit,
+    onLocationPermissionDenied: () -> Unit,
     onCalculateClick: () -> Unit,
     onPreviewClick: () -> Unit,
     onRecentDestinationClick: (Trip) -> Unit,
@@ -84,6 +91,32 @@ fun RoutePlanningScreen(
     onOpenSavedRoute: () -> Unit
 ) {
     var destinationMenuExpanded by remember { mutableStateOf(false) }
+
+    // Si no hay permiso de ubicacion lo pide al tocar el boton de GPS
+    val context = LocalContext.current
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        if (result.values.any { it }) onGpsClick() else onLocationPermissionDenied()
+    }
+    val onGpsButtonClick = {
+        val granted = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            onGpsClick()
+        } else {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
 
     // Al entrar se muestra la vista previa con las paradas
     LaunchedEffect(Unit) {
@@ -297,7 +330,7 @@ fun RoutePlanningScreen(
                             )
                         },
                         trailingIcon = {
-                            IconButton(onClick = onGpsClick) {
+                            IconButton(onClick = onGpsButtonClick) {
                                 Icon(
                                     imageVector = Icons.Default.MyLocation,
                                     contentDescription = "Usar GPS actual",
