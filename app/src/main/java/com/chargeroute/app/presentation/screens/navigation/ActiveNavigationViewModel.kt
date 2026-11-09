@@ -92,6 +92,7 @@ class ActiveNavigationViewModel(
     private var simulationJob: Job? = null
     private var updateBatteryJob: Job? = null
     private var gpsJob: Job? = null
+    private var resumeGpsOnStart = false
     private var batteryExact: Float? = null // con decimales, para que baje de a poco
     private var navSteps: List<NavStep> = emptyList()
     private var navStepsTripId: String? = null
@@ -295,7 +296,21 @@ class ActiveNavigationViewModel(
     fun stopGpsTracking() {
         gpsJob?.cancel()
         gpsJob = null
+        resumeGpsOnStart = false
         _uiState.update { it.copy(isGpsTracking = false, gpsNotice = null) }
+    }
+
+    // Corta el GPS cuando la app sale de pantalla y se acuerda si estaba andando
+    fun pauseGpsTracking() {
+        val wasTracking = _uiState.value.isGpsTracking
+        stopGpsTracking()
+        resumeGpsOnStart = wasTracking
+    }
+
+    fun resumeGpsTracking() {
+        if (!resumeGpsOnStart) return
+        resumeGpsOnStart = false
+        startGpsTracking()
     }
 
     fun applyGpsPosition(latitude: Double, longitude: Double, speedMetersPerSecond: Float) {

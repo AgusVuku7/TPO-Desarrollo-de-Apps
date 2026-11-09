@@ -13,7 +13,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.chargeroute.app.core.sensor.LightThemeHysteresis
 import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.core.theme.ThemeMode
 import com.chargeroute.app.presentation.navigation.AppNavHost
@@ -39,11 +42,12 @@ class MainActivity : ComponentActivity() {
         checkAndRequestPermissions()
 
         // Observe ambient light sensor for automatic day/night theme adaptation (RNF04, RNF05)
+        // Solo escucha el sensor mientras la pantalla esta visible
         lifecycleScope.launch {
-            container.lightSensorManager.getAmbientLuxFlow().collectLatest { lux ->
-                // Threshold: under 40 lux is low-light/night driving -> Dark theme
-                // Over 40 lux is bright sunlight -> High-contrast Light theme
-                isSensorDarkTheme = lux < 40f
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                container.lightSensorManager.getAmbientLuxFlow().collectLatest { lux ->
+                    isSensorDarkTheme = LightThemeHysteresis.isDark(isSensorDarkTheme, lux)
+                }
             }
         }
 
