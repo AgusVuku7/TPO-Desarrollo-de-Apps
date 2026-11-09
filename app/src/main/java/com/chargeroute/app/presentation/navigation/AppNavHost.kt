@@ -188,6 +188,7 @@ fun AppNavHost(
                 // 3. Route Planning (Paso 2 de 3)
                 composable(Screen.RoutePlanning.route) {
                     val state by routePlanningViewModel.uiState.collectAsState()
+                    LaunchedEffect(Unit) { routePlanningViewModel.loadDefaultOrigin() }
                     RoutePlanningScreen(
                         state = state,
                         onOriginTextChange = { routePlanningViewModel.updateOriginInput(it) },
