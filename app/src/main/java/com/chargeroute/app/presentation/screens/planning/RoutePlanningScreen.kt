@@ -23,13 +23,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Button
@@ -66,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.chargeroute.app.core.theme.BatteryGreen
+import com.chargeroute.app.core.theme.BatteryRed
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.Trip
@@ -304,7 +303,7 @@ fun RoutePlanningScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Card Origen y Destino editables
+            // Tarjeta con origen y destino editables
             TouchAccessibleCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -400,7 +399,7 @@ fun RoutePlanningScreen(
                                 Icon(
                                     imageVector = Icons.Default.LocationOn,
                                     contentDescription = null,
-                                    tint = Color(0xFFEF4444),
+                                    tint = BatteryRed,
                                     modifier = Modifier.size(18.dp)
                                 )
                             },

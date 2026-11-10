@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
 import com.chargeroute.app.data.local.entity.StationEntity
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface StationDao {
@@ -15,12 +14,6 @@ interface StationDao {
 
     @Upsert
     fun insertStation(station: StationEntity): Long
-
-    @Query("SELECT * FROM stations WHERE id = :id")
-    fun getStationById(id: String): StationEntity?
-
-    @Query("SELECT * FROM stations")
-    fun getAllStations(): Flow<List<StationEntity>>
 
     @Query("SELECT * FROM stations")
     fun getAllStationsList(): List<StationEntity>

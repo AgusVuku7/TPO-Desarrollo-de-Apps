@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.EvStation
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Route
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -75,7 +74,7 @@ fun SidebarDrawer(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                // Header with logo and close button
+                // Encabezado con logo y boton de cerrar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -98,7 +97,7 @@ fun SidebarDrawer(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "ChargeRoute",
+                            text = "RouteCharge",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -115,7 +114,7 @@ fun SidebarDrawer(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Profile Card
+                // Tarjeta de perfil
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -155,7 +154,7 @@ fun SidebarDrawer(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Menu items
+                // Opciones del menu
                 DrawerItem(
                     icon = Icons.Default.Route,
                     title = "Planificar viaje",
@@ -186,7 +185,7 @@ fun SidebarDrawer(
                 )
             }
 
-            // Bottom section: Theme mode selector & Logout
+            // Parte de abajo: selector de tema y cerrar sesion
             Column {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
@@ -197,7 +196,7 @@ fun SidebarDrawer(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // Theme Mode Selector Tabs: Claro | Oscuro | Auto
+                // Selector de tema: Claro | Oscuro | Auto
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -225,7 +224,7 @@ fun SidebarDrawer(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Logout button
+                // Boton de cerrar sesion
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -259,7 +258,7 @@ fun SidebarDrawer(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "ChargeRoute 1.0 • Hecho para tu camino",
+                    text = "RouteCharge 1.0 • Hecho para tu camino",
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

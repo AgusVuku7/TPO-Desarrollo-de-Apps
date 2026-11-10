@@ -7,12 +7,13 @@ import com.chargeroute.app.data.mapper.StationMapper
 import com.chargeroute.app.data.remote.RetrofitClient
 import com.chargeroute.app.data.remote.dto.OsrmRoute
 import com.chargeroute.app.data.remote.dto.OsrmStep
-import com.chargeroute.app.domain.model.NavStep
+import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.ChargingPlanner
 import com.chargeroute.app.domain.model.LocationPoint
+import com.chargeroute.app.domain.model.NavStep
 import com.chargeroute.app.domain.model.NoConnectionException
-import com.chargeroute.app.domain.model.RouteServiceException
 import com.chargeroute.app.domain.model.RoutePlan
+import com.chargeroute.app.domain.model.RouteServiceException
 import com.chargeroute.app.domain.model.TripClock
 import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.model.Vehicle
@@ -141,7 +142,7 @@ class RouteRepositoryImpl(
             val warning = when {
                 !chargingPlan.reachesDestination ->
                     "Con las estaciones encontradas no alcanza la batería para llegar al destino. Revisá la carga inicial o el recorrido."
-                finalArrivalBatteryPercent < 20 ->
+                finalArrivalBatteryPercent < BatteryLevels.LOW_PERCENT ->
                     "Batería estimada al arribar: $finalArrivalBatteryPercent%. Recomendamos mantener la carga programada."
                 else -> null
             }
@@ -302,18 +303,4 @@ class RouteRepositoryImpl(
 
         emit(RouteMapper.fromEntities(origin, dest, routeEntity, stopsEntities, stationMap))
     }.flowOn(Dispatchers.IO)
-
-    override suspend fun saveRoutePlan(tripId: String, plan: RoutePlan): Unit = withContext(Dispatchers.IO) {
-        val routeEntity = RouteMapper.toEntity(tripId, plan)
-        database.routeDao().insertOrUpdateRoute(routeEntity)
-
-        plan.stops.forEach { stop ->
-            database.stationDao().insertStation(StationMapper.toEntity(stop.station))
-        }
-
-        val stopEntities = RouteMapper.toStopEntities(routeEntity.id, plan.stops)
-        database.tripStopDao().deleteStopsByRouteId(routeEntity.id)
-        database.tripStopDao().insertStops(stopEntities)
-        Unit
-    }
 }

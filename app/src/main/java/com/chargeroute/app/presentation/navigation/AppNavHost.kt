@@ -225,9 +225,9 @@ fun AppNavHost(
                 // 4. Route Summary (Paso 3 de 3)
                 composable(
                     route = Screen.RouteSummary.route,
-                    arguments = listOf(navArgument("tripId") { type = NavType.StringType })
+                    arguments = listOf(navArgument(Screen.ARG_TRIP_ID) { type = NavType.StringType })
                 ) { backStackEntry ->
-                    val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+                    val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
                     // Solo una vez: llamarlo directo recargaba la pantalla (y el mapa) todo el tiempo
                     LaunchedEffect(tripId) {
                         routeSummaryViewModel.loadTrip(tripId)
@@ -252,12 +252,12 @@ fun AppNavHost(
                 composable(
                     route = Screen.StationDetail.route,
                     arguments = listOf(
-                        navArgument("tripId") { type = NavType.StringType },
-                        navArgument("stopId") { type = NavType.StringType }
+                        navArgument(Screen.ARG_TRIP_ID) { type = NavType.StringType },
+                        navArgument(Screen.ARG_STOP_ID) { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
-                    val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
-                    val stopId = backStackEntry.arguments?.getString("stopId") ?: ""
+                    val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
+                    val stopId = backStackEntry.arguments?.getString(Screen.ARG_STOP_ID) ?: ""
                     val summaryState by routeSummaryViewModel.uiState.collectAsState()
                     val stop = summaryState.trip?.routePlan?.stops?.firstOrNull { it.id == stopId }
                         ?: summaryState.trip?.routePlan?.stops?.firstOrNull()
@@ -276,12 +276,12 @@ fun AppNavHost(
                     )
                 }
 
-                // 6. Active Navigation (Copiloto)
+                // 6. Navegacion activa (Copiloto)
                 composable(
                     route = Screen.ActiveNavigation.route,
-                    arguments = listOf(navArgument("tripId") { type = NavType.StringType })
+                    arguments = listOf(navArgument(Screen.ARG_TRIP_ID) { type = NavType.StringType })
                 ) { backStackEntry ->
-                    val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+                    val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
                     val state by activeNavigationViewModel.uiState.collectAsState()
 
                     ActiveNavigationScreen(
@@ -313,12 +313,12 @@ fun AppNavHost(
                     )
                 }
 
-                // 7. Arrival Screen
+                // 7. Llegada
                 composable(
                     route = Screen.Arrival.route,
-                    arguments = listOf(navArgument("tripId") { type = NavType.StringType })
+                    arguments = listOf(navArgument(Screen.ARG_TRIP_ID) { type = NavType.StringType })
                 ) { backStackEntry ->
-                    val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+                    val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
                     val navState by activeNavigationViewModel.uiState.collectAsState()
 
                     ArrivalScreen(
@@ -339,7 +339,7 @@ fun AppNavHost(
                     )
                 }
 
-                // Saved Trips
+                // Viajes guardados
                 composable(Screen.SavedTrips.route) {
                     SavedTripsScreen(
                         viewModel = savedTripsViewModel,

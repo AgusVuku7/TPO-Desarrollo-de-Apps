@@ -42,7 +42,7 @@ object RetrofitClient {
         val client = okHttpClient.newBuilder()
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
-                    .header("User-Agent", "ChargeRoute-TPO/1.0")
+                    .header("User-Agent", "RouteCharge-TPO/1.0")
                     .build()
                 chain.proceed(request)
             }

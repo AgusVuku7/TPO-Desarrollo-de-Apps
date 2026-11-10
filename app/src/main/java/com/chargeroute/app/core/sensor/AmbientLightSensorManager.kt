@@ -10,20 +10,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 /**
- * Manages the TYPE_LIGHT ambient sensor to adapt UI luminance automatically.
- * Implements RNF04 (Light/Dark adaptation) and RNF05 (Battery responsible use).
+ * Lee el sensor de luz ambiente (TYPE_LIGHT) para cambiar solo entre modo claro y oscuro.
+ * Cubre RNF04 (adaptacion a la luz) y RNF05 (uso responsable de sensores).
  */
 class AmbientLightSensorManager(context: Context) {
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
     private val lightSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LIGHT)
 
-    val isSensorAvailable: Boolean
-        get() = lightSensor != null
-
     /**
-     * Flow of ambient lux readings.
-     * Automatically registers listener upon subscription and unregisters when closed.
+     * Flow con las lecturas de luz en lux.
+     * Registra el listener al empezar a escucharlo y lo libera cuando se deja de escuchar.
      */
     fun getAmbientLuxFlow(): Flow<Float> = callbackFlow {
         if (lightSensor == null || sensorManager == null) {
@@ -39,7 +36,7 @@ class AmbientLightSensorManager(context: Context) {
             }
 
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-                // Not critical for ambient light
+                // No hace falta para la luz ambiente
             }
         }
 

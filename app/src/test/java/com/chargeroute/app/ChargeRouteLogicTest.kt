@@ -2,7 +2,6 @@ package com.chargeroute.app
 
 import com.chargeroute.app.data.mapper.RouteMapper
 import com.chargeroute.app.domain.model.ConnectorType
-import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.Vehicle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

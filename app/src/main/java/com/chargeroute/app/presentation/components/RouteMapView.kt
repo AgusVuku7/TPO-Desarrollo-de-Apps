@@ -2,7 +2,6 @@ package com.chargeroute.app.presentation.components
 
 import android.content.Context
 import android.graphics.Paint
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,36 +9,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CenterFocusStrong
-import androidx.compose.material.icons.filled.ElectricBolt
-import androidx.compose.material.icons.filled.EvStation
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.chargeroute.app.R
@@ -61,7 +46,7 @@ import org.osmdroid.views.overlay.Polyline
 fun RouteMapView(
     routePlan: RoutePlan?,
     modifier: Modifier = Modifier,
-    activeCarProgress: Float? = null, // 0.0f to 1.0f along route
+    activeCarProgress: Float? = null, // de 0.0f a 1.0f a lo largo de la ruta
     onStationClick: ((Station) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -88,7 +73,7 @@ fun RouteMapView(
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
             isTilesScaledToDpi = true
             controller.setZoom(7.5)
-            // Center roughly around Buenos Aires province
+            // Centra el mapa mas o menos en la provincia de Buenos Aires
             controller.setCenter(GeoPoint(-36.0, -58.0))
         }
     }
@@ -114,17 +99,17 @@ fun RouteMapView(
                 if (routePlan != null && routePlan.polylinePoints.isNotEmpty()) {
                     val geoPoints = routePlan.polylinePoints.map { GeoPoint(it.first, it.second) }
 
-                    // 1. Draw Route Polyline
+                    // 1. Linea de la ruta
                     val polyline = Polyline(map).apply {
                         setPoints(geoPoints)
-                        outlinePaint.color = android.graphics.Color.parseColor("#00C88C")
+                        outlinePaint.color = BrandPrimary.toArgb()
                         outlinePaint.strokeWidth = 14f
                         outlinePaint.strokeCap = Paint.Cap.ROUND
                         outlinePaint.strokeJoin = Paint.Join.ROUND
                     }
                     map.overlays.add(polyline)
 
-                    // 2. Origin Marker (punto verde)
+                    // 2. Marcador de origen (punto verde)
                     val originGeo = GeoPoint(routePlan.origin.latitude, routePlan.origin.longitude)
                     val originMarker = Marker(map).apply {
                         position = originGeo
@@ -135,7 +120,7 @@ fun RouteMapView(
                     }
                     map.overlays.add(originMarker)
 
-                    // 3. Destination Marker (banderita)
+                    // 3. Marcador de destino (banderita)
                     val destGeo = GeoPoint(routePlan.destination.latitude, routePlan.destination.longitude)
                     val destMarker = Marker(map).apply {
                         position = destGeo
@@ -180,7 +165,7 @@ fun RouteMapView(
                         map.overlays.add(stationMarker)
                     }
 
-                    // 6. Active Car Marker along the polyline
+                    // 6. Marcador del auto sobre la ruta
                     if (activeCarProgress != null) {
                         val carMarker = Marker(map).apply {
                             position = originGeo
@@ -194,7 +179,7 @@ fun RouteMapView(
                         // Zoom de navegacion: se ven las calles y que el auto va por la ruta
                         map.controller.setZoom(16.0)
                     } else {
-                        // Fit bounding box showing origin, destination, and all stops
+                        // Ajusta el zoom para que se vean origen, destino y todas las paradas
                         try {
                             val allPoints = mutableListOf<GeoPoint>()
                             allPoints.add(originGeo)

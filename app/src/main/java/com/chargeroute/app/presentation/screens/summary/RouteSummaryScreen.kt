@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.EvStation
@@ -46,14 +45,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BatteryOrange
+import com.chargeroute.app.core.theme.BatteryRed
 import com.chargeroute.app.core.theme.BrandPrimary
+import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.DataFreshness
 import com.chargeroute.app.domain.model.TripStop
-import com.chargeroute.app.presentation.components.BatteryLevelBadge
-import com.chargeroute.app.presentation.components.formatDuration
 import com.chargeroute.app.presentation.components.RouteMapView
 import com.chargeroute.app.presentation.components.StepProgressIndicator
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
+import com.chargeroute.app.presentation.components.formatDuration
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -190,7 +190,7 @@ fun RouteSummaryScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Map View
+                // Mapa
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -209,7 +209,7 @@ fun RouteSummaryScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Trip Destination & Metrics Card
+                // Tarjeta con destino y metricas del viaje
                 TouchAccessibleCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -264,7 +264,7 @@ fun RouteSummaryScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Key Metrics Row: 414 km | 5 h 45 | 22%
+                        // Fila de metricas: distancia | tiempo | bateria al llegar
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -282,8 +282,6 @@ fun RouteSummaryScreen(
                                 )
                             }
 
-                            val hours = plan.totalDurationMinutes / 60
-                            val mins = plan.totalDurationMinutes % 60
                             Column {
                                 Text(
                                     text = formatDuration(plan.totalDurationMinutes),
@@ -302,7 +300,7 @@ fun RouteSummaryScreen(
                                     text = "${plan.arrivalBatteryPercent}%",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (plan.arrivalBatteryPercent >= 20) BatteryGreen else Color(0xFFEF4444)
+                                    color = if (plan.arrivalBatteryPercent >= BatteryLevels.LOW_PERCENT) BatteryGreen else BatteryRed
                                 )
                                 Text(
                                     text = "Batería al llegar",
@@ -314,8 +312,6 @@ fun RouteSummaryScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        val driveH = plan.driveDurationMinutes / 60
-                        val driveM = plan.driveDurationMinutes % 60
                         Text(
                             text = "${formatDuration(plan.driveDurationMinutes)} de viaje • ${formatDuration(plan.chargeDurationMinutes)} de carga" +
                                 if (plan.detourKm > 0) " • incluye ~${plan.detourKm} km de desvío para cargar" else "",
@@ -331,7 +327,7 @@ fun RouteSummaryScreen(
                 if (plan.arrivalBatteryPercent < 10) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFEF4444).copy(alpha = 0.12f),
+                        color = BatteryRed.copy(alpha = 0.12f),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 14.dp)
@@ -350,7 +346,7 @@ fun RouteSummaryScreen(
                     }
                 }
 
-                // Planned Stops List
+                // Lista de paradas planificadas
                 Text(
                     text = "Paradas de carga planificadas",
                     style = MaterialTheme.typography.titleSmall,

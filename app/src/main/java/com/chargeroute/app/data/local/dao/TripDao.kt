@@ -2,7 +2,6 @@ package com.chargeroute.app.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Query
-import androidx.room.Update
 import androidx.room.Upsert
 import com.chargeroute.app.data.local.entity.TripEntity
 import kotlinx.coroutines.flow.Flow
@@ -12,9 +11,6 @@ interface TripDao {
     // @Upsert en vez de REPLACE: no borra el viaje, asi no se pierden en cascada su ruta y paradas
     @Upsert
     fun insertOrUpdateTrip(trip: TripEntity): Long
-
-    @Update
-    fun updateTrip(trip: TripEntity): Int
 
     @Query("UPDATE trips SET currentBatteryPercent = :newBatteryPercent WHERE id = :tripId")
     fun updateBattery(tripId: String, newBatteryPercent: Int): Int
@@ -30,7 +26,4 @@ interface TripDao {
 
     @Query("SELECT * FROM trips ORDER BY createdAtMillis DESC LIMIT 1")
     fun getLatestTrip(): Flow<TripEntity?>
-
-    @Query("DELETE FROM trips WHERE id = :tripId")
-    fun deleteTrip(tripId: String): Int
 }

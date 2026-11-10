@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material3.Button
@@ -152,7 +151,7 @@ fun ArrivalScreen(
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Arrival Hero Card
+            // Tarjeta principal de llegada
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -220,7 +219,7 @@ fun ArrivalScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Trip Results Card
+            // Tarjeta con los resultados del viaje
             TouchAccessibleCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -274,7 +273,7 @@ fun ArrivalScreen(
 
                     val usedKwh = plan?.let { it.distanceKm * it.consumptionKwhPer100Km / 100.0 } ?: 0.0
                     Text(
-                        text = "${formatDuration(plan?.driveDurationMinutes ?: 0)} de manejo • ${formatDuration(plan?.chargeDurationMinutes ?: 0)} de carga • ${"%.1f".format(usedKwh)} kWh usados",
+                        text = "${formatDuration(plan?.driveDurationMinutes ?: 0)} de manejo • ${formatDuration(plan?.chargeDurationMinutes ?: 0)} de carga • ${String.format(Locale.US, "%.1f", usedKwh)} kWh usados",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -283,7 +282,7 @@ fun ArrivalScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Remaining Battery Card
+            // Tarjeta de bateria restante
             val batteryRemaining = plan?.arrivalBatteryPercent ?: 22
             TouchAccessibleCard(
                 modifier = Modifier.fillMaxWidth()

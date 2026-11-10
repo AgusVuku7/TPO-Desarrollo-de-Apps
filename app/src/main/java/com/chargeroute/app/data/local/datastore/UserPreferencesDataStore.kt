@@ -16,7 +16,6 @@ class UserPreferencesDataStore(private val context: Context) {
 
     private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
     private val KEY_SELECTED_VEHICLE_ID = stringPreferencesKey("selected_vehicle_id")
-    private val KEY_PREFERRED_CONNECTOR = stringPreferencesKey("preferred_connector")
     private val KEY_USER_NAME = stringPreferencesKey("user_name")
     private val KEY_USER_EMAIL = stringPreferencesKey("user_email")
     private val KEY_IS_LOGGED_IN = stringPreferencesKey("is_logged_in")
@@ -43,16 +42,6 @@ class UserPreferencesDataStore(private val context: Context) {
     suspend fun setSelectedVehicleId(id: String) {
         context.dataStore.edit { preferences ->
             preferences[KEY_SELECTED_VEHICLE_ID] = id
-        }
-    }
-
-    val preferredConnector: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[KEY_PREFERRED_CONNECTOR] ?: "CCS2"
-    }
-
-    suspend fun setPreferredConnector(connector: String) {
-        context.dataStore.edit { preferences ->
-            preferences[KEY_PREFERRED_CONNECTOR] = connector
         }
     }
 

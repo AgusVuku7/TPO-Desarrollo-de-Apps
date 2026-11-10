@@ -14,7 +14,4 @@ interface RouteDao {
 
     @Query("SELECT * FROM routes WHERE tripId = :tripId LIMIT 1")
     fun getRouteByTripId(tripId: String): Flow<RouteEntity?>
-
-    @Query("DELETE FROM routes WHERE tripId = :tripId")
-    fun deleteRouteByTripId(tripId: String): Int
 }
