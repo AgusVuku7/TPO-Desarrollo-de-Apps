@@ -26,7 +26,7 @@ import com.chargeroute.app.core.theme.BatteryRed
 
 /**
  * Implements RNF06 - Recuperación ante errores.
- * Displays network error with "Reintentar" and "Abrir última ruta guardada" options.
+ * Muestra el error de red con las opciones "Reintentar" y "Abrir última ruta guardada".
  */
 @Composable
 fun ErrorRetryBanner(

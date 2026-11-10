@@ -31,7 +31,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Fake implementation of [TripRepository] in-memory for testing.
+ * Implementacion falsa de [TripRepository] en memoria para los tests.
  */
 class FakeTripRepository(
     initialTrips: List<Trip> = emptyList()

@@ -36,16 +36,16 @@ class TripRepositoryImpl(
         val tripEntity = TripMapper.toEntity(trip)
         database.tripDao().insertOrUpdateTrip(tripEntity)
 
-        // Save route
+        // Guarda la ruta
         val routeEntity = RouteMapper.toEntity(trip.id, trip.routePlan)
         database.routeDao().insertOrUpdateRoute(routeEntity)
 
-        // Save stations
+        // Guarda las estaciones
         trip.routePlan.stops.forEach { stop ->
             database.stationDao().insertStation(StationMapper.toEntity(stop.station))
         }
 
-        // Save stops
+        // Guarda las paradas
         val stopEntities = RouteMapper.toStopEntities(routeEntity.id, trip.routePlan.stops)
         database.tripStopDao().deleteStopsByRouteId(routeEntity.id)
         database.tripStopDao().insertStops(stopEntities)
@@ -81,7 +81,7 @@ class TripRepositoryImpl(
             val stationMap = stationEntities.associate { it.id to StationMapper.fromEntity(it) }
             RouteMapper.fromEntities(origin, dest, routeEntity, stopEntities, stationMap)
         } else {
-            // Default placeholder
+            // Valor por defecto
             null
         }
 

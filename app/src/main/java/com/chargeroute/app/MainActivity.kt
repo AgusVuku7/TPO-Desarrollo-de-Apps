@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        // Permissions granted or denied handled gracefully (RNF05)
+        // Si acepta o rechaza, la app sigue andando igual (RNF05)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,10 +38,10 @@ class MainActivity : ComponentActivity() {
 
         val container = ChargeRouteApp.instance.container
 
-        // Request location permissions if not already granted
+        // Pide el permiso de ubicacion si todavia no se dio
         checkAndRequestPermissions()
 
-        // Observe ambient light sensor for automatic day/night theme adaptation (RNF04, RNF05)
+        // Escucha el sensor de luz para cambiar solo entre modo claro y oscuro (RNF04, RNF05)
         // Solo escucha el sensor mientras la pantalla esta visible
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {

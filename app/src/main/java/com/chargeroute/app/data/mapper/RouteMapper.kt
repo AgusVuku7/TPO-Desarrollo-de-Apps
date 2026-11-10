@@ -2,6 +2,7 @@ package com.chargeroute.app.data.mapper
 
 import com.chargeroute.app.data.local.entity.RouteEntity
 import com.chargeroute.app.data.local.entity.TripStopEntity
+import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Station
@@ -84,8 +85,8 @@ object RouteMapper {
             directDistanceKm = routeEntity.directDistanceKm,
             departureTime = TripClock.at(routeEntity.calculatedAtMillis, 0),
             arrivalTime = TripClock.at(routeEntity.calculatedAtMillis, routeEntity.totalDurationMinutes),
-            isLowBatteryWarning = routeEntity.arrivalBatteryPercent < 20,
-            warningMessage = if (routeEntity.arrivalBatteryPercent < 20) {
+            isLowBatteryWarning = routeEntity.arrivalBatteryPercent < BatteryLevels.LOW_PERCENT,
+            warningMessage = if (routeEntity.arrivalBatteryPercent < BatteryLevels.LOW_PERCENT) {
                 "Batería baja al llegar: ${routeEntity.arrivalBatteryPercent}%. Mantené la parada en ${stops.firstOrNull()?.station?.name ?: "estación de recarga"}."
             } else null
         )
@@ -117,7 +118,7 @@ object RouteMapper {
     }
 
     /**
-     * Standard Polyline decoder for Google/OSRM 5-decimal polylines.
+     * Decodificador de polilineas de Google/OSRM (precision de 5 decimales).
      */
     fun decodePolyline(encoded: String): List<Pair<Double, Double>> {
         val poly = ArrayList<Pair<Double, Double>>()

@@ -13,27 +13,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Wc
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -166,7 +162,7 @@ fun StationDetailScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Station Card
+            // Tarjeta de la estacion
             TouchAccessibleCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -270,7 +266,7 @@ fun StationDetailScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Planned Charge Card
+            // Tarjeta de la carga planificada
             TouchAccessibleCard(
                 modifier = Modifier.fillMaxWidth()
             ) {

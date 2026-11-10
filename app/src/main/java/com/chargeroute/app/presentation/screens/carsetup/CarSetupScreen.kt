@@ -1,7 +1,5 @@
 package com.chargeroute.app.presentation.screens.carsetup
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +27,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
@@ -67,7 +64,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BatteryOrange
 import com.chargeroute.app.core.theme.BrandPrimary

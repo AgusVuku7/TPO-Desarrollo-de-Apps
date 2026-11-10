@@ -3,10 +3,11 @@ package com.chargeroute.app.presentation.screens.planning
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.core.location.LocationClient
+import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.NoConnectionException
-import com.chargeroute.app.domain.model.RouteServiceException
 import com.chargeroute.app.domain.model.RoutePlan
+import com.chargeroute.app.domain.model.RouteServiceException
 import com.chargeroute.app.domain.model.Trip
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.repository.TripRepository
@@ -14,6 +15,7 @@ import com.chargeroute.app.domain.usecase.CalculateRouteUseCase
 import com.chargeroute.app.domain.usecase.GeocodeAddressUseCase
 import com.chargeroute.app.domain.usecase.GetOfflineRouteUseCase
 import com.chargeroute.app.domain.usecase.SaveTripUseCase
+import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,7 +47,7 @@ data class RoutePlanningUiState(
     val originInputText: String = "Buenos Aires (Obelisco)",
     val destinationInputText: String = "Mar del Plata (Plaza Colón)",
     val vehicle: Vehicle? = null,
-    val initialBatteryPercent: Int = 70,
+    val initialBatteryPercent: Int = BatteryLevels.DEFAULT_INITIAL_PERCENT,
     val acActive: Boolean = true,
     val isLoading: Boolean = false,
     val calculatedPlan: RoutePlan? = null,
@@ -233,7 +235,7 @@ class RoutePlanningViewModel(
             if (_uiState.value.originInputText != untouchedText) return@launch
             val point = LocationPoint(
                 name = "Mi ubicación GPS",
-                address = String.format("Lat: %.4f, Lon: %.4f", loc.latitude, loc.longitude),
+                address = String.format(Locale.US, "Lat: %.4f, Lon: %.4f", loc.latitude, loc.longitude),
                 latitude = loc.latitude,
                 longitude = loc.longitude
             )
@@ -257,29 +259,9 @@ class RoutePlanningViewModel(
         }
     }
 
-    fun setOriginCity(city: ArgentineCity) {
-        _uiState.update {
-            it.copy(
-                origin = LocationPoint(city.name, city.address, city.latitude, city.longitude),
-                originInputText = city.name,
-                infoNotice = null
-            )
-        }
-    }
-
-    fun setDestinationCity(city: ArgentineCity) {
-        _uiState.update {
-            it.copy(
-                destination = LocationPoint(city.name, city.address, city.latitude, city.longitude),
-                destinationInputText = city.name,
-                infoNotice = null
-            )
-        }
-    }
-
     fun updateOriginInput(text: String) {
         _uiState.update { it.copy(originInputText = text, calculatedPlan = null, addressOptions = emptyList()) }
-        // Match against known cities or custom geocode
+        // Busca entre las ciudades conocidas; si no esta, queda como direccion a buscar
         val matched = argentineCities.firstOrNull { it.name.contains(text, ignoreCase = true) }
         if (matched != null) {
             _uiState.update {
@@ -343,7 +325,7 @@ class RoutePlanningViewModel(
                 if (isInsideArgentina) {
                     val point = LocationPoint(
                         name = "Mi ubicación GPS",
-                        address = String.format("Lat: %.4f, Lon: %.4f", lat, lon),
+                        address = String.format(Locale.US, "Lat: %.4f, Lon: %.4f", lat, lon),
                         latitude = lat,
                         longitude = lon
                     )

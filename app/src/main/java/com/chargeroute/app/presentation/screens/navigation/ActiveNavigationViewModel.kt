@@ -3,6 +3,7 @@ package com.chargeroute.app.presentation.screens.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.core.location.LocationClient
+import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.NavStep
 import com.chargeroute.app.domain.model.RangeEstimator
 import com.chargeroute.app.domain.model.ReachEstimate
@@ -12,6 +13,8 @@ import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.domain.usecase.GetNavigationStepsUseCase
 import com.chargeroute.app.domain.usecase.UpdateBatteryUseCase
+import java.util.Locale
+import kotlin.random.Random
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,14 +24,12 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.util.Locale
-import kotlin.random.Random
 
 data class ActiveNavigationUiState(
     val trip: Trip? = null,
     val progress: Float = 0.0f, // 0.0 a 1.0 a lo largo del viaje
     val currentSpeedKmH: Int = 92,
-    val currentBatteryPercent: Int = 70,
+    val currentBatteryPercent: Int = BatteryLevels.DEFAULT_INITIAL_PERCENT,
     val distanceToNextStopKm: Int = 210,
     val minutesToNextStop: Int = 145,
     val distanceRemainingTotalKm: Int = 404,
@@ -46,7 +47,7 @@ data class ActiveNavigationUiState(
     val maneuverType: String = "straight"
 ) {
     val isLowBatteryWarning: Boolean
-        get() = currentBatteryPercent < 20
+        get() = currentBatteryPercent < BatteryLevels.LOW_PERCENT
 
     // Proxima parada de carga (null si ya se pasaron todas)
     val nextStop: TripStop?

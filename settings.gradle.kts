@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ChargeRoute"
+rootProject.name = "RouteCharge"
 include(":app")

@@ -49,7 +49,7 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Header: Brand logo and title
+            // Encabezado: logo y nombre de la app
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -72,7 +72,7 @@ fun LoginScreen(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "ChargeRoute",
+                    text = "RouteCharge",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = (-0.5).sp
@@ -81,7 +81,7 @@ fun LoginScreen(
                 )
             }
 
-            // Hero Graphic Card
+            // Tarjeta con la ilustracion principal
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -119,7 +119,7 @@ fun LoginScreen(
                 }
             }
 
-            // Title & Value Proposition
+            // Titulo y propuesta de valor
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.Start
@@ -137,7 +137,7 @@ fun LoginScreen(
                 )
             }
 
-            // Authentication Buttons
+            // Botones de inicio de sesion
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),

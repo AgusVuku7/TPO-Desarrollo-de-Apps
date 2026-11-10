@@ -1,4 +1,4 @@
-# ChargeRoute ⚡🚗
+# RouteCharge ⚡🚗
 
 > **Aplicación móvil para planificar viajes en automóvil eléctrico**  
 > **Materia:** Desarrollo de Aplicaciones I — 2° Cuatrimestre 2026 (Turno Noche)  
@@ -14,7 +14,7 @@
 
 Quienes conducen un vehículo eléctrico y planifican viajes interurbanos sufren de **ansiedad de autonomía (*range anxiety*)** y alta carga cognitiva debido a la dispersión de información sobre estaciones de recarga, tipos de conectores y compatibilidad.
 
-**ChargeRoute** resuelve este problema integrando:
+**RouteCharge** resuelve este problema integrando:
 - Cálculo y trazado de rutas interurbanas optimizadas para vehículos eléctricos.
 - Estimación precisa del consumo de energía según el vehículo y el uso de climatización (A/C).
 - Detección y recomendación de paradas estratégicas en estaciones de recarga compatibles (ej. *Punto de carga Dolores* en Autovía 2 km 210 para el trayecto Buenos Aires → Mar del Plata).

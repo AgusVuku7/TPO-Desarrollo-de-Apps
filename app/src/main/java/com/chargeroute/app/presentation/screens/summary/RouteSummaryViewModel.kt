@@ -33,7 +33,7 @@ class RouteSummaryViewModel(
             if (trip != null) {
                 _uiState.update { it.copy(trip = trip, isLoading = false) }
             } else {
-                // Fallback to latest trip
+                // Si no lo encuentra, usa el ultimo viaje
                 val latest = tripRepository.getLatestTrip().firstOrNull()
                 _uiState.update { it.copy(trip = latest, isLoading = false) }
             }

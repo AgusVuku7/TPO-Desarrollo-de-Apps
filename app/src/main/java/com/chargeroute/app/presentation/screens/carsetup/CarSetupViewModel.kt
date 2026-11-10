@@ -2,6 +2,7 @@ package com.chargeroute.app.presentation.screens.carsetup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.usecase.GetVehicleCatalogUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,7 @@ import kotlinx.coroutines.launch
 data class CarSetupUiState(
     val availableVehicles: List<Vehicle> = emptyList(),
     val selectedVehicle: Vehicle? = null,
-    val initialBatteryPercent: Int = 70,
+    val initialBatteryPercent: Int = BatteryLevels.DEFAULT_INITIAL_PERCENT,
     val acActive: Boolean = true
 ) {
     val usableBatteryKwh: Double

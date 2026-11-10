@@ -17,8 +17,6 @@ interface RouteRepository {
 
     fun getOfflineRoute(tripId: String): Flow<RoutePlan?>
 
-    suspend fun saveRoutePlan(tripId: String, plan: RoutePlan)
-
     suspend fun geocodeAddress(address: String): List<LocationPoint>
 
     suspend fun getNavigationSteps(plan: RoutePlan): List<NavStep>
