@@ -10,14 +10,14 @@ interface StationDao {
     // @Upsert actualiza la fila si ya existe. REPLACE la borraba y la volvia a insertar,
     // y ese borrado eliminaba en cascada las paradas (trip_stops) de los viajes guardados.
     @Upsert
-    fun insertStations(stations: List<StationEntity>): List<Long>
+    suspend fun insertStations(stations: List<StationEntity>)
 
     @Upsert
-    fun insertStation(station: StationEntity): Long
+    suspend fun insertStation(station: StationEntity)
 
     @Query("SELECT * FROM stations")
-    fun getAllStationsList(): List<StationEntity>
+    suspend fun getAllStations(): List<StationEntity>
 
     @Query("SELECT * FROM stations WHERE id IN (:ids)")
-    fun getStationsByIds(ids: List<String>): List<StationEntity>
+    suspend fun getStationsByIds(ids: List<String>): List<StationEntity>
 }

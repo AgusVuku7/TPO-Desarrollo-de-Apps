@@ -14,12 +14,6 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 class UserPreferencesDataStore(private val context: Context) {
 
-    private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
-    private val KEY_SELECTED_VEHICLE_ID = stringPreferencesKey("selected_vehicle_id")
-    private val KEY_USER_NAME = stringPreferencesKey("user_name")
-    private val KEY_USER_EMAIL = stringPreferencesKey("user_email")
-    private val KEY_IS_LOGGED_IN = stringPreferencesKey("is_logged_in")
-
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
         val modeStr = preferences[KEY_THEME_MODE] ?: ThemeMode.SYSTEM.name
         try {
@@ -63,5 +57,14 @@ class UserPreferencesDataStore(private val context: Context) {
             preferences[KEY_USER_NAME] = name
             preferences[KEY_USER_EMAIL] = email
         }
+    }
+
+    // Claves de cada preferencia guardada (se crean una sola vez para toda la app)
+    private companion object {
+        val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
+        val KEY_SELECTED_VEHICLE_ID = stringPreferencesKey("selected_vehicle_id")
+        val KEY_USER_NAME = stringPreferencesKey("user_name")
+        val KEY_USER_EMAIL = stringPreferencesKey("user_email")
+        val KEY_IS_LOGGED_IN = stringPreferencesKey("is_logged_in")
     }
 }

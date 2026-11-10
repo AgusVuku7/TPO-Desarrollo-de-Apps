@@ -1,5 +1,6 @@
 package com.chargeroute.app.data.remote
 
+import com.chargeroute.app.BuildConfig
 import com.chargeroute.app.data.remote.api.NominatimApi
 import com.chargeroute.app.data.remote.api.OpenChargeMapApi
 import com.chargeroute.app.data.remote.api.OsrmRoutingApi
@@ -16,11 +17,12 @@ object RetrofitClient {
     private const val NOMINATIM_BASE_URL = "https://nominatim.openstreetmap.org/"
 
     private val okHttpClient: OkHttpClient by lazy {
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+        val builder = OkHttpClient.Builder()
+        // El log muestra la URL completa (con la API key de OpenChargeMap): solo en debug, nunca en release
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
         }
-        OkHttpClient.Builder()
-            .addInterceptor(logging)
+        builder
             // El servidor de rutas es publico y a veces tarda: con 5 segundos se caia a la linea recta
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)

@@ -104,10 +104,6 @@ fun AppNavHost(
         drawerContent = {
             ModalDrawerSheet {
                 val savedTrips by savedTripsViewModel.savedTrips.collectAsStateWithLifecycle()
-                // Cada vez que se abre el menu se actualiza la cantidad de viajes
-                LaunchedEffect(drawerState.isOpen) {
-                    if (drawerState.isOpen) savedTripsViewModel.refresh()
-                }
                 SidebarDrawer(
                     userName = "Sofía Martín",
                     userEmail = "sofia.martin@gmail.com",
@@ -341,8 +337,6 @@ fun AppNavHost(
                 // Viajes guardados
                 composable(Screen.SavedTrips.route) {
                     val trips by savedTripsViewModel.savedTrips.collectAsStateWithLifecycle()
-                    // Se vuelve a leer al entrar, asi aparecen los viajes nuevos
-                    LaunchedEffect(Unit) { savedTripsViewModel.refresh() }
                     SavedTripsScreen(
                         trips = trips,
                         onTripClick = { trip ->
@@ -356,7 +350,6 @@ fun AppNavHost(
                 // Cargadores donde se paro en los viajes guardados
                 composable(Screen.UsedChargers.route) {
                     val chargers by usedChargersViewModel.chargers.collectAsStateWithLifecycle()
-                    LaunchedEffect(Unit) { usedChargersViewModel.refresh() }
                     UsedChargersScreen(
                         chargers = chargers,
                         onChargerClick = { charger ->
