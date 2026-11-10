@@ -40,7 +40,6 @@ data class RoutePlanningUiState(
     val calculatedPlan: RoutePlan? = null,
     val errorMessage: String? = null,
     val infoNotice: String? = null,
-    val createdTripId: String? = null,
     val recentTrips: List<Trip> = emptyList(),
     val addressOptions: List<LocationPoint> = emptyList(),
     val optionsAreForOrigin: Boolean = true
@@ -368,12 +367,11 @@ class RoutePlanningViewModel(
                     it.copy(
                         isLoading = false,
                         calculatedPlan = plan,
-                        createdTripId = tripId,
                         errorMessage = null
                     )
                 }
                 loadRecentTrips()
-                // El viaje ya quedo guardado en Room y en createdTripId: el evento solo avisa para navegar
+                // El viaje ya quedo guardado en Room (se puede abrir desde Mis viajes): el evento solo avisa para navegar
                 _events.emit(RoutePlanningEvent.TripCreated(tripId))
             }.onFailure { err ->
                 _uiState.update {
