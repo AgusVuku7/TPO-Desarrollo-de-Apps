@@ -23,10 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BatteryOrange
+import com.chargeroute.app.core.theme.ChargeRouteTheme
 
 // Franja que avisa que no hay internet. Se muestra arriba de todas las pantallas (RNF01).
 @Composable
@@ -56,12 +60,21 @@ fun OfflineBanner(visible: Boolean, modifier: Modifier = Modifier) {
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Sin conexión • se muestran los datos guardados",
+                    text = stringResource(R.string.component_offline_message),
                     color = Color.White,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
+    }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+private fun OfflineBannerPreview() {
+    ChargeRouteTheme(darkTheme = false) {
+        OfflineBanner(visible = true)
     }
 }

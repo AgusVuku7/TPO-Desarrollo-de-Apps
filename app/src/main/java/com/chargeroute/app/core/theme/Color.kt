@@ -30,3 +30,8 @@ val BatteryOrange = Color(0xFFF59E0B)
 val BatteryRed = Color(0xFFEF4444)
 val RouteBlue = Color(0xFF0284C7)
 val ChargingStationBlue = Color(0xFF38BDF8)
+val WarningTextRed = Color(0xFFB91C1C)
+
+// Cartel de indicaciones de la navegacion: oscuro manejando y verde cargando, en los dos temas
+val NavigationBannerDark = Color(0xFF111827)
+val NavigationBannerCharging = Color(0xFF15803D)

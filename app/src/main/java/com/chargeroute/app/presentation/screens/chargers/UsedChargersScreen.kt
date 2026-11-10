@@ -1,5 +1,6 @@
 package com.chargeroute.app.presentation.screens.chargers
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,12 +29,17 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BrandPrimary
+import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.domain.model.UsedCharger
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
+import com.chargeroute.app.presentation.preview.PreviewData
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -50,7 +56,7 @@ fun UsedChargersScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Mis cargadores",
+                        text = stringResource(R.string.chargers_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -60,7 +66,7 @@ fun UsedChargersScreen(
                         onClick = onBackClick,
                         modifier = Modifier.size(48.dp) // RNF02
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -88,13 +94,13 @@ fun UsedChargersScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Todavía no paraste en ningún cargador",
+                        text = stringResource(R.string.chargers_empty_title),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Acá aparecen los cargadores de las paradas de tus viajes guardados.",
+                        text = stringResource(R.string.chargers_empty_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -159,9 +165,13 @@ private fun UsedChargerCard(charger: UsedCharger, onClick: () -> Unit) {
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                val times = if (charger.tripsCount > 1) " • en ${charger.tripsCount} viajes" else ""
+                val lastTripText = if (charger.tripsCount > 1) {
+                    stringResource(R.string.chargers_last_trip_multiple, charger.lastTripLabel, date, charger.tripsCount)
+                } else {
+                    stringResource(R.string.chargers_last_trip, charger.lastTripLabel, date)
+                }
                 Text(
-                    text = "${charger.lastTripLabel} ($date)$times",
+                    text = lastTripText,
                     style = MaterialTheme.typography.labelSmall,
                     color = BrandPrimary
                 )
@@ -172,5 +182,21 @@ private fun UsedChargerCard(charger: UsedCharger, onClick: () -> Unit) {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun UsedChargersScreenPreview() {
+    ChargeRouteTheme(darkTheme = false) {
+        UsedChargersScreen(chargers = listOf(PreviewData.usedCharger), onChargerClick = {}, onBackClick = {})
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun UsedChargersScreenDarkPreview() {
+    ChargeRouteTheme(darkTheme = true) {
+        UsedChargersScreen(chargers = listOf(PreviewData.usedCharger), onChargerClick = {}, onBackClick = {})
     }
 }
