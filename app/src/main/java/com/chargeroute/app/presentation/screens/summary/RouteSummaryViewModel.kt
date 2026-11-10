@@ -3,7 +3,6 @@ package com.chargeroute.app.presentation.screens.summary
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.domain.model.Trip
-import com.chargeroute.app.domain.usecase.GetOfflineRouteUseCase
 import com.chargeroute.app.domain.repository.TripRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,8 +18,7 @@ data class RouteSummaryUiState(
 )
 
 class RouteSummaryViewModel(
-    private val tripRepository: TripRepository,
-    private val getOfflineRouteUseCase: GetOfflineRouteUseCase
+    private val tripRepository: TripRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RouteSummaryUiState())

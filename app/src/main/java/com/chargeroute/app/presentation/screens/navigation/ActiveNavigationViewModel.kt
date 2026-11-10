@@ -28,15 +28,12 @@ import kotlinx.coroutines.launch
 data class ActiveNavigationUiState(
     val trip: Trip? = null,
     val progress: Float = 0.0f, // 0.0 a 1.0 a lo largo del viaje
-    val currentSpeedKmH: Int = 92,
+    val currentSpeedKmH: Int = 0,
     val currentBatteryPercent: Int = BatteryLevels.DEFAULT_INITIAL_PERCENT,
-    val distanceToNextStopKm: Int = 210,
-    val minutesToNextStop: Int = 145,
-    val distanceRemainingTotalKm: Int = 404,
-    val currentManeuver: String = "Continuá por Autovía 2",
-    val maneuverDistance: String = "2.4 km",
-    val maneuverSubtext: String = "Hacia Dolores y Mar del Plata",
-    val roadName: String = "Autovía 2 (Sentido Sur)",
+    val distanceToNextStopKm: Int = 0,
+    val distanceRemainingTotalKm: Int = 0,
+    val currentManeuver: String = "",
+    val maneuverDistance: String = "",
     val isArrived: Boolean = false,
     val isSimulationPlaying: Boolean = false,
     val stopProgresses: List<Float> = emptyList(), // en que parte de la ruta esta cada cargador (0.0 a 1.0)
@@ -83,6 +80,7 @@ data class ActiveNavigationUiState(
 class ActiveNavigationViewModel(
     private val tripRepository: TripRepository,
     private val updateBatteryUseCase: UpdateBatteryUseCase,
+    // Opcionales para poder probar el ViewModel en tests sin GPS ni red
     private val locationClient: LocationClient? = null,
     private val getNavigationStepsUseCase: GetNavigationStepsUseCase? = null
 ) : ViewModel() {
@@ -170,10 +168,8 @@ class ActiveNavigationViewModel(
                 } else {
                     stopProgresses.indexOfFirst { it > currentProg }.let { if (it == -1) stopProgresses.size else it }
                 }
-                val nextStop = trip.routePlan.stops.getOrNull(nextStopIndex)
                 val stopProgress = stopProgresses.getOrNull(nextStopIndex)
                 val stopDist = if (stopProgress != null) (totalDist * stopProgress).toInt() else totalDist
-                val stopMin = if (stopProgress != null) (trip.routePlan.driveDurationMinutes * stopProgress).toInt() else trip.routePlan.driveDurationMinutes
 
                 _uiState.value = ActiveNavigationUiState(
                     trip = trip,
@@ -184,11 +180,8 @@ class ActiveNavigationViewModel(
                     currentBatteryPercent = trip.currentBatteryPercent,
                     distanceRemainingTotalKm = if (isSameTrip) _uiState.value.distanceRemainingTotalKm else totalDist,
                     distanceToNextStopKm = if (isSameTrip) _uiState.value.distanceToNextStopKm else stopDist,
-                    minutesToNextStop = if (isSameTrip) _uiState.value.minutesToNextStop else stopMin,
                     currentManeuver = if (isSameTrip) _uiState.value.currentManeuver else "Seguí la ruta marcada",
                     maneuverDistance = if (isSameTrip) _uiState.value.maneuverDistance else "$stopDist km",
-                    maneuverSubtext = if (nextStop != null) "Próxima parada: ${nextStop.station.name}" else "Hacia ${trip.destination.name}",
-                    roadName = "Hacia ${trip.destination.name}",
                     stopProgresses = stopProgresses,
                     nextStopIndex = nextStopIndex,
                     isCharging = isSameTrip && _uiState.value.isCharging,
@@ -229,11 +222,6 @@ class ActiveNavigationViewModel(
         updateBatteryJob = job
         return job
     }
-
-    /**
-     * Sobrecarga conveniente para invocar con tripId como primer argumento
-     */
-    fun updateBattery(tripId: String, newPercent: Int): Job = updateBattery(newPercent, tripId)
 
     /**
      * Inicia o pausa la simulación en tiempo real (copiloto activo)
@@ -402,10 +390,6 @@ class ActiveNavigationViewModel(
             else -> "Seguí la ruta hacia $destinationName"
         }
 
-        // Debajo de la indicacion: la parada que viene despues (o el destino)
-        val upcomingStop = if (reachedStop) stops.getOrNull(stopIndex + 1) else nextStop
-        val subtext = upcomingStop?.let { "Próxima parada: ${it.station.name}" } ?: "Hacia $destinationName"
-
         val maneuverDist = when {
             arrived || reachedStop -> "0 m"
             step != null -> distanceText((step.progress - newProgress) * totalDist)
@@ -429,7 +413,6 @@ class ActiveNavigationViewModel(
                 progress = newProgress,
                 distanceRemainingTotalKm = remainingKm,
                 distanceToNextStopKm = stopDistanceKm,
-                minutesToNextStop = (stopDistanceKm / 1.4).toInt().coerceAtLeast(1),
                 currentSpeedKmH = speed,
                 currentBatteryPercent = remainingBattery,
                 currentManeuver = maneuver,
@@ -437,8 +420,7 @@ class ActiveNavigationViewModel(
                 isArrived = arrived,
                 nextStopIndex = stopIndex,
                 isCharging = reachedStop,
-                maneuverType = maneuverType,
-                maneuverSubtext = subtext
+                maneuverType = maneuverType
             )
         }
 
@@ -458,12 +440,6 @@ class ActiveNavigationViewModel(
                 tripRepository.markTripCompleted(trip.id)
             }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        stopSimulation()
-        stopGpsTracking()
     }
 
     companion object {

@@ -3,7 +3,6 @@ package com.chargeroute.app.data.repository
 import com.chargeroute.app.core.network.NetworkConnectivityObserver
 import com.chargeroute.app.data.local.ChargeRouteDatabase
 import com.chargeroute.app.data.mapper.RouteMapper
-import com.chargeroute.app.data.mapper.StationMapper
 import com.chargeroute.app.data.remote.RetrofitClient
 import com.chargeroute.app.data.remote.dto.OsrmRoute
 import com.chargeroute.app.data.remote.dto.OsrmStep
@@ -19,11 +18,9 @@ import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.repository.RouteRepository
 import com.chargeroute.app.domain.repository.StationRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
 class RouteRepositoryImpl(
@@ -169,6 +166,8 @@ class RouteRepositoryImpl(
             )
 
             Result.success(routePlan)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -178,6 +177,8 @@ class RouteRepositoryImpl(
         return try {
             val response = osrmApi.getRoute(coordinates = coordinates)
             if (response.isSuccessful) response.body()?.routes?.firstOrNull() else null
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             null
         }
@@ -192,6 +193,8 @@ class RouteRepositoryImpl(
         val route = try {
             val response = osrmApi.getRoute(coordinates = coordinates.joinToString(";"), steps = true)
             if (response.isSuccessful) response.body()?.routes?.firstOrNull() else null
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             null
         }
@@ -286,21 +289,4 @@ class RouteRepositoryImpl(
             }
         }.distinctBy { it.address }
     }
-
-    override fun getOfflineRoute(tripId: String): Flow<RoutePlan?> = flow {
-        val routeEntity = database.routeDao().getRouteByTripId(tripId).firstOrNull()
-        if (routeEntity == null) {
-            emit(null)
-            return@flow
-        }
-        val tripEntity = database.tripDao().getTripById(tripId).firstOrNull() ?: return@flow
-        val stopsEntities = database.tripStopDao().getStopsByRouteIdSync(routeEntity.id)
-        val stationEntities = database.stationDao().getStationsByIds(stopsEntities.map { it.stationId })
-        val stationMap = stationEntities.associate { it.id to StationMapper.fromEntity(it) }
-
-        val origin = LocationPoint(tripEntity.originName, tripEntity.originAddress, tripEntity.originLat, tripEntity.originLng)
-        val dest = LocationPoint(tripEntity.destName, tripEntity.destAddress, tripEntity.destLat, tripEntity.destLng)
-
-        emit(RouteMapper.fromEntities(origin, dest, routeEntity, stopsEntities, stationMap))
-    }.flowOn(Dispatchers.IO)
 }

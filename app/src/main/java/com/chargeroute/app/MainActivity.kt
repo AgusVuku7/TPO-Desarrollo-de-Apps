@@ -1,45 +1,39 @@
 package com.chargeroute.app
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.chargeroute.app.core.sensor.LightThemeHysteresis
 import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.core.theme.ThemeMode
+import com.chargeroute.app.presentation.ThemeViewModel
 import com.chargeroute.app.presentation.navigation.AppNavHost
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private var isSensorDarkTheme by mutableStateOf(false)
+    private val container by lazy { (application as ChargeRouteApp).container }
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        // Si acepta o rechaza, la app sigue andando igual (RNF05)
+    private val themeViewModel: ThemeViewModel by viewModels {
+        viewModelFactory { initializer { ThemeViewModel(container.userPreferences) } }
     }
+
+    private var isSensorDarkTheme by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val container = ChargeRouteApp.instance.container
-
-        // Pide el permiso de ubicacion si todavia no se dio
-        checkAndRequestPermissions()
 
         // Escucha el sensor de luz para cambiar solo entre modo claro y oscuro (RNF04, RNF05)
         // Solo escucha el sensor mientras la pantalla esta visible
@@ -52,9 +46,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val userPrefs = container.userPreferences
-            val currentThemeMode by userPrefs.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
-            val scope = rememberCoroutineScope()
+            val currentThemeMode by themeViewModel.themeMode.collectAsStateWithLifecycle()
 
             val isDark = when (currentThemeMode) {
                 ThemeMode.LIGHT -> false
@@ -65,28 +57,11 @@ class MainActivity : ComponentActivity() {
 
             ChargeRouteTheme(darkTheme = isDark) {
                 AppNavHost(
+                    container = container,
                     currentThemeMode = currentThemeMode,
-                    onThemeModeChange = { mode ->
-                        scope.launch {
-                            userPrefs.setThemeMode(mode)
-                        }
-                    }
+                    onThemeModeChange = themeViewModel::setThemeMode
                 )
             }
-        }
-    }
-
-    private fun checkAndRequestPermissions() {
-        val fineLoc = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-        val coarseLoc = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-
-        if (fineLoc != PackageManager.PERMISSION_GRANTED || coarseLoc != PackageManager.PERMISSION_GRANTED) {
-            requestPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
         }
     }
 }

@@ -77,7 +77,7 @@ app/src/main/java/com/chargeroute/app/
 ├── domain/                       # Lógica de negocio pura (independiente de UI/framework)
 │   ├── model/                    # Vehicle, Station, Connector, RoutePlan, Trip, TripStop
 │   ├── repository/               # Interfaces de repositorios (Route, Trip, Vehicle)
-│   └── usecase/                  # CalculateRoute, UpdateBattery, GetOfflineRoute, SaveTrip
+│   └── usecase/                  # CalculateRoute, UpdateBattery, SaveTrip
 │
 ├── data/                         # Capa de datos y persistencia
 │   ├── local/

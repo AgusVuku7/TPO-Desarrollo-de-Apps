@@ -19,7 +19,6 @@ import com.chargeroute.app.domain.repository.VehicleRepository
 import com.chargeroute.app.domain.usecase.CalculateRouteUseCase
 import com.chargeroute.app.domain.usecase.GeocodeAddressUseCase
 import com.chargeroute.app.domain.usecase.GetNavigationStepsUseCase
-import com.chargeroute.app.domain.usecase.GetOfflineRouteUseCase
 import com.chargeroute.app.domain.usecase.GetVehicleCatalogUseCase
 import com.chargeroute.app.domain.usecase.SaveTripUseCase
 import com.chargeroute.app.domain.usecase.UpdateBatteryUseCase
@@ -38,7 +37,6 @@ interface AppContainer {
 
     val calculateRouteUseCase: CalculateRouteUseCase
     val updateBatteryUseCase: UpdateBatteryUseCase
-    val getOfflineRouteUseCase: GetOfflineRouteUseCase
     val saveTripUseCase: SaveTripUseCase
     val getVehicleCatalogUseCase: GetVehicleCatalogUseCase
     val geocodeAddressUseCase: GeocodeAddressUseCase
@@ -94,10 +92,6 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val updateBatteryUseCase: UpdateBatteryUseCase by lazy {
         UpdateBatteryUseCase(tripRepository)
-    }
-
-    override val getOfflineRouteUseCase: GetOfflineRouteUseCase by lazy {
-        GetOfflineRouteUseCase(routeRepository)
     }
 
     override val saveTripUseCase: SaveTripUseCase by lazy {

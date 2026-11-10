@@ -17,11 +17,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -78,11 +77,10 @@ fun RouteMapView(
         }
     }
 
-    DisposableEffect(Unit) {
+    // El mapa solo trabaja (tiles, redibujo) mientras la pantalla esta en primer plano
+    LifecycleResumeEffect(mapView) {
         mapView.onResume()
-        onDispose {
-            mapView.onPause()
-        }
+        onPauseOrDispose { mapView.onPause() }
     }
 
     Box(modifier = modifier) {
