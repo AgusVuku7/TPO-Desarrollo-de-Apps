@@ -5,23 +5,17 @@ import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.domain.model.UsedCharger
 import com.chargeroute.app.domain.model.UsedChargers
 import com.chargeroute.app.domain.repository.TripRepository
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 class UsedChargersViewModel(
-    private val tripRepository: TripRepository
+    tripRepository: TripRepository
 ) : ViewModel() {
-    private val _chargers = MutableStateFlow<List<UsedCharger>>(emptyList())
-    val chargers: StateFlow<List<UsedCharger>> = _chargers.asStateFlow()
 
-    // Sale de los viajes guardados en Room, asi que funciona sin conexion
-    fun refresh() {
-        viewModelScope.launch {
-            val trips = tripRepository.getSavedTrips().firstOrNull() ?: emptyList()
-            _chargers.value = UsedChargers.fromTrips(trips)
-        }
-    }
+    // Sale de los viajes guardados en Room, asi que funciona sin conexion y se actualiza sola
+    val chargers: StateFlow<List<UsedCharger>> = tripRepository.getSavedTrips()
+        .map { trips -> UsedChargers.fromTrips(trips) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 }

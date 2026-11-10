@@ -47,6 +47,11 @@ android {
     }
 }
 
+// Room guarda aca el esquema de cada version de la base
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

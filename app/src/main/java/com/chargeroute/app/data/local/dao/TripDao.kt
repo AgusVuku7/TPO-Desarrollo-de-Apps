@@ -10,20 +10,21 @@ import kotlinx.coroutines.flow.Flow
 interface TripDao {
     // @Upsert en vez de REPLACE: no borra el viaje, asi no se pierden en cascada su ruta y paradas
     @Upsert
-    fun insertOrUpdateTrip(trip: TripEntity): Long
+    suspend fun insertOrUpdateTrip(trip: TripEntity)
 
     @Query("UPDATE trips SET currentBatteryPercent = :newBatteryPercent WHERE id = :tripId")
-    fun updateBattery(tripId: String, newBatteryPercent: Int): Int
+    suspend fun updateBattery(tripId: String, newBatteryPercent: Int)
 
     @Query("UPDATE trips SET isCompleted = 1 WHERE id = :tripId")
-    fun markCompleted(tripId: String): Int
+    suspend fun markCompleted(tripId: String)
 
     @Query("SELECT * FROM trips WHERE id = :tripId")
-    fun getTripById(tripId: String): Flow<TripEntity?>
+    suspend fun getTripById(tripId: String): TripEntity?
 
+    // Flow: avisa solo cada vez que cambia la tabla de viajes
     @Query("SELECT * FROM trips ORDER BY createdAtMillis DESC")
-    fun getAllTrips(): Flow<List<TripEntity>>
+    fun observeAllTrips(): Flow<List<TripEntity>>
 
     @Query("SELECT * FROM trips ORDER BY createdAtMillis DESC LIMIT 1")
-    fun getLatestTrip(): Flow<TripEntity?>
+    suspend fun getLatestTrip(): TripEntity?
 }

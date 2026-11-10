@@ -9,11 +9,11 @@ import com.chargeroute.app.data.local.entity.TripStopEntity
 @Dao
 interface TripStopDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertStops(stops: List<TripStopEntity>): List<Long>
+    suspend fun insertStops(stops: List<TripStopEntity>)
 
     @Query("SELECT * FROM trip_stops WHERE routeId = :routeId ORDER BY orderIndex ASC")
-    fun getStopsByRouteIdSync(routeId: String): List<TripStopEntity>
+    suspend fun getStopsByRouteId(routeId: String): List<TripStopEntity>
 
     @Query("DELETE FROM trip_stops WHERE routeId = :routeId")
-    fun deleteStopsByRouteId(routeId: String): Int
+    suspend fun deleteStopsByRouteId(routeId: String)
 }

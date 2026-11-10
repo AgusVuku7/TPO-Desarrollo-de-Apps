@@ -42,7 +42,7 @@ class StationRepositoryImpl(
         route: List<Pair<Double, Double>>,
         vehicleConnectors: List<ConnectorType>
     ): List<Station> = withContext(Dispatchers.IO) {
-        val cached = stationDao.getAllStationsList().map { StationMapper.fromEntity(it) }
+        val cached = stationDao.getAllStations().map { StationMapper.fromEntity(it) }
         StationFilter.alongRoute(cached, route, vehicleConnectors)
     }
 

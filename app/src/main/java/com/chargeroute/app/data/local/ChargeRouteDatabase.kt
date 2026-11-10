@@ -23,7 +23,8 @@ import com.chargeroute.app.data.local.entity.TripStopEntity
         TripStopEntity::class
     ],
     version = 2,
-    exportSchema = false
+    // El esquema se guarda en app/schemas para poder revisar y probar las migraciones
+    exportSchema = true
 )
 abstract class ChargeRouteDatabase : RoomDatabase() {
 
@@ -52,7 +53,6 @@ abstract class ChargeRouteDatabase : RoomDatabase() {
                     "chargeroute_db"
                 )
                     .addMigrations(MIGRATION_1_2)
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
