@@ -17,3 +17,7 @@ app/build/
 build/
 *.apk
 *.aab
+
+# Notas personales del equipo (no se suben al repo)
+RouteCharge-pendientes.md
+RouteCharge-auditoria.md
