@@ -1,5 +1,6 @@
 package com.chargeroute.app.presentation.screens.sidebar
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,10 +40,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BrandPrimary
+import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.core.theme.ThemeMode
 
 @Composable
@@ -74,196 +79,237 @@ fun SidebarDrawer(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                // Encabezado con logo y boton de cerrar
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(BrandPrimary),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ElectricBolt,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "RouteCharge",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onClose,
-                        modifier = Modifier.size(44.dp) // RNF02
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = "Cerrar menú")
-                    }
-                }
+                DrawerHeader(onClose = onClose)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Tarjeta de perfil
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(BrandPrimary.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = BrandPrimary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = userName,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = userEmail,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                ProfileCard(userName = userName, userEmail = userEmail)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Opciones del menu
-                DrawerItem(
-                    icon = Icons.Default.Route,
-                    title = "Planificar viaje",
-                    isSelected = true,
-                    onClick = {
-                        onClose()
-                        onNavigateToPlan()
-                    }
-                )
-
-                DrawerItem(
-                    icon = Icons.Default.History,
-                    title = "Mis viajes",
-                    badge = "$savedTripsCount",
-                    onClick = {
-                        onClose()
-                        onNavigateToSavedTrips()
-                    }
-                )
-
-                DrawerItem(
-                    icon = Icons.Default.EvStation,
-                    title = "Mis cargadores",
-                    onClick = {
-                        onClose()
-                        onNavigateToChargers()
-                    }
+                DrawerMenuItems(
+                    savedTripsCount = savedTripsCount,
+                    onNavigateToPlan = onNavigateToPlan,
+                    onNavigateToSavedTrips = onNavigateToSavedTrips,
+                    onNavigateToChargers = onNavigateToChargers,
+                    onClose = onClose
                 )
             }
 
             // Parte de abajo: selector de tema y cerrar sesion
-            Column {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            DrawerBottom(
+                currentThemeMode = currentThemeMode,
+                onThemeModeChange = onThemeModeChange,
+                onLogout = onLogout
+            )
+        }
+    }
+}
 
-                Text(
-                    text = "Apariencia y Modo Lumínico",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                // Selector de tema: Claro | Oscuro | Auto
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    ThemeTab(
-                        title = "Claro",
-                        selected = currentThemeMode == ThemeMode.LIGHT,
-                        onClick = { onThemeModeChange(ThemeMode.LIGHT) }
-                    )
-                    ThemeTab(
-                        title = "Oscuro",
-                        selected = currentThemeMode == ThemeMode.DARK,
-                        onClick = { onThemeModeChange(ThemeMode.DARK) }
-                    )
-                    ThemeTab(
-                        title = "Auto",
-                        selected = currentThemeMode == ThemeMode.AUTO_SENSOR,
-                        onClick = { onThemeModeChange(ThemeMode.AUTO_SENSOR) }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Boton de cerrar sesion
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(
-                        onClick = onLogout,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "Cerrar sesión",
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = "RouteCharge 1.0 • Hecho para tu camino",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+// Encabezado con logo y boton de cerrar
+@Composable
+private fun DrawerHeader(onClose: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(BrandPrimary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ElectricBolt,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
                 )
             }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
+
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier.size(44.dp) // RNF02
+        ) {
+            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.sidebar_close_menu))
+        }
+    }
+}
+
+// Tarjeta de perfil
+@Composable
+private fun ProfileCard(userName: String, userEmail: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(BrandPrimary.copy(alpha = 0.2f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                tint = BrandPrimary,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+            Text(
+                text = userName,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = userEmail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// Opciones del menu
+@Composable
+private fun DrawerMenuItems(
+    savedTripsCount: Int,
+    onNavigateToPlan: () -> Unit,
+    onNavigateToSavedTrips: () -> Unit,
+    onNavigateToChargers: () -> Unit,
+    onClose: () -> Unit
+) {
+    DrawerItem(
+        icon = Icons.Default.Route,
+        title = stringResource(R.string.sidebar_plan_trip),
+        isSelected = true,
+        onClick = {
+            onClose()
+            onNavigateToPlan()
+        }
+    )
+
+    DrawerItem(
+        icon = Icons.Default.History,
+        title = stringResource(R.string.sidebar_my_trips),
+        badge = "$savedTripsCount",
+        onClick = {
+            onClose()
+            onNavigateToSavedTrips()
+        }
+    )
+
+    DrawerItem(
+        icon = Icons.Default.EvStation,
+        title = stringResource(R.string.sidebar_my_chargers),
+        onClick = {
+            onClose()
+            onNavigateToChargers()
+        }
+    )
+}
+
+// Parte de abajo: selector de tema, cerrar sesion y version
+@Composable
+private fun DrawerBottom(
+    currentThemeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    onLogout: () -> Unit
+) {
+    Column {
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+        Text(
+            text = stringResource(R.string.sidebar_appearance),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Selector de tema: Claro | Oscuro | Auto
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            ThemeTab(
+                title = stringResource(R.string.sidebar_theme_light),
+                selected = currentThemeMode == ThemeMode.LIGHT,
+                onClick = { onThemeModeChange(ThemeMode.LIGHT) }
+            )
+            ThemeTab(
+                title = stringResource(R.string.sidebar_theme_dark),
+                selected = currentThemeMode == ThemeMode.DARK,
+                onClick = { onThemeModeChange(ThemeMode.DARK) }
+            )
+            ThemeTab(
+                title = stringResource(R.string.sidebar_theme_auto),
+                selected = currentThemeMode == ThemeMode.AUTO_SENSOR,
+                onClick = { onThemeModeChange(ThemeMode.AUTO_SENSOR) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Boton de cerrar sesion
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(R.string.sidebar_logout),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = stringResource(R.string.sidebar_footer, stringResource(R.string.app_name)),
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -362,5 +408,43 @@ private fun ThemeTab(
                 color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SidebarDrawerPreview() {
+    ChargeRouteTheme(darkTheme = false) {
+        SidebarDrawer(
+            userName = "Sofía Martín",
+            userEmail = "sofia.martin@gmail.com",
+            savedTripsCount = 2,
+            currentThemeMode = ThemeMode.SYSTEM,
+            onThemeModeChange = {},
+            onNavigateToPlan = {},
+            onNavigateToSavedTrips = {},
+            onNavigateToChargers = {},
+            onLogout = {},
+            onClose = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun SidebarDrawerDarkPreview() {
+    ChargeRouteTheme(darkTheme = true) {
+        SidebarDrawer(
+            userName = "Sofía Martín",
+            userEmail = "sofia.martin@gmail.com",
+            savedTripsCount = 2,
+            currentThemeMode = ThemeMode.SYSTEM,
+            onThemeModeChange = {},
+            onNavigateToPlan = {},
+            onNavigateToSavedTrips = {},
+            onNavigateToChargers = {},
+            onLogout = {},
+            onClose = {}
+        )
     }
 }

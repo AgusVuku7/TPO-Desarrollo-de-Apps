@@ -15,8 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BrandPrimary
+import com.chargeroute.app.core.theme.ChargeRouteTheme
 
 @Composable
 fun StepProgressIndicator(
@@ -29,7 +33,7 @@ fun StepProgressIndicator(
         horizontalAlignment = Alignment.End
     ) {
         Text(
-            text = "PASO $currentStep DE $totalSteps",
+            text = stringResource(R.string.component_step_progress, currentStep, totalSteps),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -52,5 +56,14 @@ fun StepProgressIndicator(
                 )
             }
         }
+    }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+private fun StepProgressIndicatorPreview() {
+    ChargeRouteTheme(darkTheme = false) {
+        StepProgressIndicator(currentStep = 2)
     }
 }

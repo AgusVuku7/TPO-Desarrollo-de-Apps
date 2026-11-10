@@ -1,5 +1,6 @@
 package com.chargeroute.app.presentation.screens.savedtrips
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,11 +30,16 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BrandPrimary
+import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.domain.model.Trip
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
+import com.chargeroute.app.presentation.preview.PreviewData
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -50,7 +56,7 @@ fun SavedTripsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Historial de viajes",
+                        text = stringResource(R.string.savedtrips_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -60,7 +66,7 @@ fun SavedTripsScreen(
                         onClick = onBackClick,
                         modifier = Modifier.size(48.dp) // RNF02
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -88,13 +94,13 @@ fun SavedTripsScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "No tenés viajes guardados aún",
+                        text = stringResource(R.string.savedtrips_empty_title),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Planificá tu primer viaje para que quede disponible sin conexión.",
+                        text = stringResource(R.string.savedtrips_empty_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -155,7 +161,11 @@ fun SavedTripsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "${trip.vehicle.displayName} • ${trip.routePlan.distanceKm.toInt()} km",
+                                    text = stringResource(
+                                        R.string.savedtrips_vehicle_distance,
+                                        trip.vehicle.displayName,
+                                        trip.routePlan.distanceKm.toInt()
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.weight(1f)
@@ -163,7 +173,7 @@ fun SavedTripsScreen(
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "Ver ruta offline",
+                                        text = stringResource(R.string.savedtrips_view_offline),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = BrandPrimary,
                                         fontWeight = FontWeight.Bold
@@ -181,5 +191,21 @@ fun SavedTripsScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SavedTripsScreenPreview() {
+    ChargeRouteTheme(darkTheme = false) {
+        SavedTripsScreen(trips = listOf(PreviewData.trip), onTripClick = {}, onBackClick = {})
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun SavedTripsScreenDarkPreview() {
+    ChargeRouteTheme(darkTheme = true) {
+        SavedTripsScreen(trips = listOf(PreviewData.trip), onTripClick = {}, onBackClick = {})
     }
 }

@@ -2,6 +2,7 @@ package com.chargeroute.app.presentation.components
 
 import android.content.Context
 import android.graphics.Paint
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.runtime.remember
@@ -23,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -48,6 +52,17 @@ fun RouteMapView(
     activeCarProgress: Float? = null, // de 0.0f a 1.0f a lo largo de la ruta
     onStationClick: ((Station) -> Unit)? = null
 ) {
+    // En el preview de Android Studio no se puede crear el MapView de osmdroid
+    if (LocalInspectionMode.current) {
+        Box(
+            modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(stringResource(R.string.component_map_preview_placeholder))
+        }
+        return
+    }
+
     val context = LocalContext.current
 
     // Para no redibujar todo en cada movimiento del auto
@@ -113,7 +128,7 @@ fun RouteMapView(
                         position = originGeo
                         icon = ContextCompat.getDrawable(context, R.drawable.ic_map_origin)
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                        title = "Origen: ${routePlan.origin.name}"
+                        title = context.getString(R.string.component_map_origin_title, routePlan.origin.name)
                         snippet = routePlan.origin.address
                     }
                     map.overlays.add(originMarker)
@@ -124,7 +139,7 @@ fun RouteMapView(
                         position = destGeo
                         icon = ContextCompat.getDrawable(context, R.drawable.ic_map_flag)
                         setAnchor(0.22f, 0.94f) // la base del mastil queda justo en el destino
-                        title = "Destino: ${routePlan.destination.name}"
+                        title = context.getString(R.string.component_map_destination_title, routePlan.destination.name)
                         snippet = routePlan.destination.address
                     }
                     map.overlays.add(destMarker)
@@ -141,7 +156,7 @@ fun RouteMapView(
                                 alpha = 0.55f
                                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                                 title = station.name
-                                snippet = stationSnippet(station)
+                                snippet = stationSnippet(context, station)
                             }
                             map.overlays.add(nearbyMarker)
                         }
@@ -154,7 +169,11 @@ fun RouteMapView(
                             icon = ContextCompat.getDrawable(context, R.drawable.ic_map_bolt) // rayo = aca se carga
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             title = stop.station.name
-                            snippet = "${stationSnippet(stop.station)} • Parada ${stop.stopDurationMinutes} min"
+                            snippet = context.getString(
+                                R.string.component_map_stop_snippet,
+                                stationSnippet(context, stop.station),
+                                stop.stopDurationMinutes
+                            )
                             setOnMarkerClickListener { _, _ ->
                                 onStationClick?.invoke(stop.station)
                                 true
@@ -169,7 +188,7 @@ fun RouteMapView(
                             position = originGeo
                             icon = ContextCompat.getDrawable(context, R.drawable.ic_map_nav)
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                            title = "Tu Vehículo en Ruta"
+                            title = context.getString(R.string.component_map_vehicle_title)
                         }
                         map.overlays.add(carMarker)
                         carMarkerHolder[0] = carMarker
@@ -201,7 +220,7 @@ fun RouteMapView(
                     val carPoint = RouteGeometry.pointAtProgress(routePlan.polylinePoints, progressClamped)
                     val carGeo = GeoPoint(carPoint.first, carPoint.second)
                     carMarker.position = carGeo
-                    carMarker.snippet = "Progreso: ${(progressClamped * 100).toInt()}%"
+                    carMarker.snippet = context.getString(R.string.component_map_progress, (progressClamped * 100).toInt())
 
                     // Modo conductor: el mapa gira segun hacia donde va el auto y el auto queda abajo
                     map.mapOrientation = -RouteGeometry.bearingAtProgress(routePlan.polylinePoints, progressClamped)
@@ -225,7 +244,7 @@ fun RouteMapView(
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Zoom In")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.component_map_zoom_in))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -236,7 +255,7 @@ fun RouteMapView(
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.Default.Remove, contentDescription = "Zoom Out")
+                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.component_map_zoom_out))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -253,16 +272,16 @@ fun RouteMapView(
                 contentColor = BrandPrimary,
                 modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.Default.CenterFocusStrong, contentDescription = "Centrar Ruta")
+                Icon(Icons.Default.CenterFocusStrong, contentDescription = stringResource(R.string.component_map_center_route))
             }
         }
     }
 }
 
 // Texto corto del cartel de una estacion: operador, conectores y potencia maxima
-private fun stationSnippet(station: Station): String {
+private fun stationSnippet(context: Context, station: Station): String {
     val connectors = station.connectors.map { it.type.displayName }.distinct().joinToString(", ")
     val maxKw = station.connectors.maxOfOrNull { it.powerKw } ?: 0.0
-    val power = if (maxKw > 0) " • hasta ${maxKw.toInt()} kW" else ""
+    val power = if (maxKw > 0) context.getString(R.string.component_map_up_to_kw, maxKw.toInt()) else ""
     return "${station.operator} • $connectors$power"
 }

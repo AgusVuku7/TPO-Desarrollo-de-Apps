@@ -1,3 +1,204 @@
 <resources>
     <string name="app_name">RouteCharge</string>
+
+    <!-- Textos comunes a varias pantallas -->
+    <string name="common_back">Atrás</string>
+    <string name="common_close">Cerrar</string>
+
+    <!-- Login -->
+    <string name="login_logo_description">Logo</string>
+    <string name="login_illustration_caption">Rutas inteligentes para tu auto eléctrico</string>
+    <string name="login_title">Tu ruta eléctrica,\nsin sorpresas</string>
+    <string name="login_subtitle">Elegí tu destino. Nosotros planificamos las cargas para que disfrutes el camino.</string>
+    <string name="login_google_letter">G</string>
+    <string name="login_continue_google">Continuar con Google</string>
+    <string name="login_continue_guest">Continuar como invitado</string>
+    <string name="login_terms">Al continuar, aceptás nuestros Términos y condiciones y la Política de privacidad.</string>
+
+    <!-- Menu lateral -->
+    <string name="sidebar_close_menu">Cerrar menú</string>
+    <string name="sidebar_plan_trip">Planificar viaje</string>
+    <string name="sidebar_my_trips">Mis viajes</string>
+    <string name="sidebar_my_chargers">Mis cargadores</string>
+    <string name="sidebar_appearance">Apariencia y Modo Lumínico</string>
+    <string name="sidebar_theme_light">Claro</string>
+    <string name="sidebar_theme_dark">Oscuro</string>
+    <string name="sidebar_theme_auto">Auto</string>
+    <string name="sidebar_logout">Cerrar sesión</string>
+    <string name="sidebar_footer">%1$s 1.0 • Hecho para tu camino</string>
+
+    <!-- Historial de viajes -->
+    <string name="savedtrips_title">Historial de viajes</string>
+    <string name="savedtrips_empty_title">No tenés viajes guardados aún</string>
+    <string name="savedtrips_empty_subtitle">Planificá tu primer viaje para que quede disponible sin conexión.</string>
+    <string name="savedtrips_vehicle_distance">%1$s • %2$d km</string>
+    <string name="savedtrips_view_offline">Ver ruta offline</string>
+
+    <!-- Mis cargadores -->
+    <string name="chargers_title">Mis cargadores</string>
+    <string name="chargers_empty_title">Todavía no paraste en ningún cargador</string>
+    <string name="chargers_empty_subtitle">Acá aparecen los cargadores de las paradas de tus viajes guardados.</string>
+    <string name="chargers_last_trip">%1$s (%2$s)</string>
+    <string name="chargers_last_trip_multiple">%1$s (%2$s) • en %3$d viajes</string>
+
+    <!-- Componentes -->
+    <string name="component_battery_percent">%1$d%%</string>
+    <string name="component_retry_open_last_route">Abrir última ruta</string>
+    <string name="component_retry">Reintentar</string>
+    <string name="component_offline_message">Sin conexión • se muestran los datos guardados</string>
+    <string name="component_step_progress">PASO %1$d DE %2$d</string>
+    <string name="component_map_preview_placeholder">Mapa (vista previa)</string>
+    <string name="component_map_origin_title">Origen: %1$s</string>
+    <string name="component_map_destination_title">Destino: %1$s</string>
+    <string name="component_map_stop_snippet">%1$s • Parada %2$d min</string>
+    <string name="component_map_vehicle_title">Tu Vehículo en Ruta</string>
+    <string name="component_map_progress">Progreso: %1$d%%</string>
+    <string name="component_map_up_to_kw">" • hasta %1$d kW"</string>
+    <string name="component_map_zoom_in">Zoom In</string>
+    <string name="component_map_zoom_out">Zoom Out</string>
+    <string name="component_map_center_route">Centrar Ruta</string>
+
+    <!-- Datos del auto -->
+    <string name="carsetup_open_menu">Abrir menú</string>
+    <string name="carsetup_next">Siguiente</string>
+    <string name="carsetup_title">Conozcamos tu auto</string>
+    <string name="carsetup_subtitle">Calculamos tu ruta con los datos reales de tu vehículo eléctrico.</string>
+    <string name="carsetup_vehicle_section">Vehículo eléctrico (Mercado Argentino)</string>
+    <string name="carsetup_vehicle_label">Vehículo</string>
+    <string name="carsetup_vehicle_subtitle">%1$s • %2$s</string>
+    <string name="carsetup_change">Cambiar</string>
+    <string name="carsetup_back_to_brands">Volver a las marcas</string>
+    <string name="carsetup_vehicle_option_detail">%1$s • %2$s km declarados • %3$s kWh/100 km</string>
+    <string name="carsetup_spec_title">Ficha del auto</string>
+    <string name="carsetup_autocompleted">Autocompletado</string>
+    <string name="carsetup_kwh_value">%1$s kWh</string>
+    <string name="carsetup_usable_battery_label">Batería útil total</string>
+    <string name="carsetup_km_value">%1$s km</string>
+    <string name="carsetup_factory_range_label">Autonomía de fábrica</string>
+    <string name="carsetup_max_dc">DC hasta %1$s kW</string>
+    <string name="carsetup_ac_title">Aire acondicionado</string>
+    <string name="carsetup_ac_on" formatted="false">Climatización encendida (+10% consumo)</string>
+    <string name="carsetup_ac_off">Climatización apagada (modo económico)</string>
+    <string name="carsetup_consumption_label">Consumo calculado</string>
+    <string name="carsetup_consumption_value">%1$s kWh / 100 km</string>
+    <string name="carsetup_estimated_range_label">Autonomía estimada actual</string>
+    <string name="carsetup_battery_title">Batería actual</string>
+    <string name="carsetup_battery_hint">Ingresá o deslizá el porcentaje de carga</string>
+    <string name="carsetup_minus_5" formatted="false">Bajar 5%</string>
+    <string name="carsetup_plus_5" formatted="false">Subir 5%</string>
+    <string name="carsetup_percent_suffix" formatted="false">%</string>
+    <string name="carsetup_percent_min" formatted="false">5%</string>
+    <string name="carsetup_percent_max" formatted="false">100%</string>
+    <string name="carsetup_kwh_available">%1$s kWh disponibles de %2$s kWh</string>
+    <!-- Pantalla de planificacion de ruta -->
+    <string name="planning_vehicle_fallback">Vehículo</string>
+    <string name="planning_vehicle_summary">%1$s %2$s • %3$d kWh</string>
+    <string name="planning_battery">Batería: %1$d%%</string>
+    <string name="planning_calculate_button">Calcular ruta y paradas de carga</string>
+    <string name="planning_calculate_hint">Calculamos las paradas necesarias y el consumo exacto.</string>
+    <string name="planning_title">¿A dónde vamos?</string>
+    <string name="planning_subtitle">Ingresá cualquier dirección. Si hay calles iguales en otras ciudades, agregá la ciudad.</string>
+    <string name="planning_origin_label">Punto de Partida (Origen)</string>
+    <string name="planning_origin_placeholder">Ej: Del Comercio 988, CABA</string>
+    <string name="planning_gps_description">Usar GPS actual</string>
+    <string name="planning_swap_description">Intercambiar origen y destino</string>
+    <string name="planning_destination_label">Punto de Llegada (Destino)</string>
+    <string name="planning_destination_placeholder">Ej: Güemes 2800, Mar del Plata</string>
+    <string name="planning_recent_description">Ver últimos destinos</string>
+    <string name="planning_no_trips">Todavía no calculaste ningún viaje.</string>
+    <string name="planning_history">Ver historial</string>
+    <string name="planning_options_origin">¿Cuál es tu origen?</string>
+    <string name="planning_options_destination">¿Cuál es tu destino?</string>
+    <string name="planning_map_title">Vista previa del mapa de ruta</string>
+    <string name="planning_map_button">Ver en el mapa</string>
+    <string name="planning_map_loading">Buscando la ruta…</string>
+    <string name="planning_map_hint">Tocá \"Ver en el mapa\"</string>
+    <string name="planning_route_no_stops">%1$d km • sin paradas de carga</string>
+    <string name="planning_route_with_stops">%1$d km • parada en %2$s</string>
+    <string name="planning_route_with_stops_detour">%1$d km (incluye %2$d km de desvío para cargar) • parada en %3$s</string>
+    <!-- Resumen de ruta -->
+    <string name="summary_start_trip">Iniciar viaje</string>
+    <string name="summary_offline_saved">Sin conexión • cargadores guardados el %1$s</string>
+    <string name="summary_offline_saved_stale">Sin conexión • cargadores guardados el %1$s (pueden estar desactualizados)</string>
+    <string name="summary_illustrative_plan">Plan ilustrativo: salida %1$s • consumo %2$s kWh/100 km.\nDisponibilidad y tiempos de carga estimados, no en vivo.</string>
+    <string name="summary_ready_title">Tu ruta está lista</string>
+    <string name="summary_arrival_time">Llegada %1$s</string>
+    <string name="summary_one_charge">1 carga</string>
+    <string name="summary_charges">%1$d cargas</string>
+    <string name="summary_distance_value">%1$d km</string>
+    <string name="summary_distance">Distancia</string>
+    <string name="summary_total_time">Tiempo total</string>
+    <string name="summary_battery_at_arrival">Batería al llegar</string>
+    <string name="summary_trip_breakdown">%1$s de viaje • %2$s de carga</string>
+    <string name="summary_trip_breakdown_detour">%1$s de viaje • %2$s de carga • incluye ~%3$d km de desvío para cargar</string>
+    <string name="summary_warning_no_stops">Atención: con esta batería no llegás con reserva y no tenemos cargadores cerca de esta ruta.</string>
+    <string name="summary_warning_one_stop">Atención: con una sola parada no llegás con reserva. Este viaje necesitaría más cargas.</string>
+    <string name="summary_planned_stops">Paradas de carga planificadas</string>
+    <string name="summary_stop_times">%1$s-%2$s • %3$d min</string>
+    <string name="summary_stop_battery">%1$d%% → %2$d%%</string>
+    <string name="summary_stop_detail">Ver detalle</string>
+    <string name="summary_battery_percent">%1$d%%</string>
+
+    <!-- Llegada -->
+    <string name="arrival_title">VIAJE FINALIZADO</string>
+    <string name="arrival_plan_new_trip">Planificar nuevo viaje</string>
+    <string name="arrival_view_summary">Ver resumen del viaje</string>
+    <string name="arrival_illustrative">Resumen de un viaje ilustrativo.</string>
+    <string name="arrival_reached">Llegaste a destino</string>
+    <string name="arrival_greeting">¡Hola, %1$s!</string>
+    <string name="arrival_subtitle">%1$s • Una carga, todo el camino resuelto.</string>
+    <string name="arrival_distance_value">%1$d km</string>
+    <string name="arrival_traveled">Recorridos</string>
+    <string name="arrival_total_time">Tiempo total</string>
+    <string name="arrival_charge_stop">Parada de carga</string>
+    <string name="arrival_trip_breakdown">%1$s de manejo • %2$s de carga • %3$s kWh usados</string>
+    <string name="arrival_battery_remaining">Batería restante</string>
+    <string name="arrival_battery_detail">14 kWh • aprox. 90 km disponibles</string>
+    <string name="arrival_battery_percent">%1$d%%</string>
+    <!-- Detalle de la estacion -->
+    <string name="station_header">PARADA DEL VIAJE</string>
+    <string name="station_go_to_charger">Ir al cargador</string>
+    <string name="station_title">Carga en %1$s</string>
+    <string name="station_save">Guardar</string>
+    <string name="station_availability_with_count">%1$d puntos de carga • Disponibilidad no informada</string>
+    <string name="station_availability_unknown">Disponibilidad no informada • Confirmá antes de viajar</string>
+    <string name="station_connectors_title">Conectores y potencia</string>
+    <string name="station_connector_line">%1$s • %2$d kW %3$s</string>
+    <string name="station_compatible">Compatible</string>
+    <string name="station_not_compatible">No compatible</string>
+    <string name="station_vehicle_default">vehículo</string>
+    <string name="station_vehicle_max_power">Tu %1$s acepta hasta %2$d kW de carga rápida DC.</string>
+    <string name="station_planned_title">Tu carga planificada</string>
+    <string name="station_charge_range">%1$d%% → %2$d%%</string>
+    <string name="station_duration_min">%1$d min</string>
+    <string name="station_energy_kwh">%1$s kWh</string>
+    <string name="station_energy_label">Energía a cargar</string>
+    <string name="station_amenity_hours">24 h</string>
+    <string name="station_amenity_cafe">Café</string>
+    <string name="station_amenity_restrooms">Baños</string>
+    <string name="station_update_battery_title">Actualizar batería tras la carga</string>
+    <string name="station_update_battery_hint">Ajustá el porcentaje real obtenido en la estación:</string>
+    <string name="station_battery_charged">Batería cargada: %1$d%%</string>
+    <string name="station_disclaimer">Cargador de ejemplo. Confirmá disponibilidad y funcionamiento antes de viajar.</string>
+
+    <!-- Navegacion activa -->
+    <string name="nav_exit">Salir de la navegación</string>
+    <string name="nav_speed_unit">km/h</string>
+    <string name="nav_gps_stop">Dejar de seguir el GPS</string>
+    <string name="nav_gps_start">Seguir el GPS real</string>
+    <string name="nav_pause">Pausar</string>
+    <string name="nav_simulate">Simular viaje</string>
+    <string name="nav_alert_cannot_reach">No alcanza para llegar a %1$s: faltan ~%2$d%% de batería</string>
+    <string name="nav_alert_tight">Llegás justo a %1$s (~%2$d%%)</string>
+    <string name="nav_alert_low_battery">Batería baja: %1$d%%</string>
+    <string name="nav_destination_default">destino</string>
+    <string name="nav_remaining">%1$d km • %2$s</string>
+    <string name="nav_reach_ok">Llegás a %1$s con ~%2$d%% • autonomía ~%3$d km</string>
+    <string name="nav_reach_no">No llegás a %1$s (%2$d km) • autonomía ~%3$d km</string>
+    <string name="nav_adjust_battery">Ajustar batería</string>
+    <string name="nav_battery_less">Menos batería</string>
+    <string name="nav_battery_more">Más batería</string>
+    <string name="nav_charger_default">el cargador</string>
+    <string name="nav_charged_hint">Cargado. Tocá Simular viaje para seguir</string>
+    <string name="nav_next_charger">%1$s • %2$d km</string>
 </resources>

@@ -21,8 +21,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BatteryRed
+import com.chargeroute.app.core.theme.ChargeRouteTheme
 
 /**
  * Implements RNF06 - Recuperación ante errores.
@@ -65,14 +69,27 @@ fun ErrorRetryBanner(
             horizontalArrangement = Arrangement.End
         ) {
             TextButton(onClick = onOpenSavedRoute) {
-                Text("Abrir última ruta")
+                Text(stringResource(R.string.component_retry_open_last_route))
             }
             OutlinedButton(
                 onClick = onRetry,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = BatteryRed)
             ) {
-                Text("Reintentar")
+                Text(stringResource(R.string.component_retry))
             }
         }
+    }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+private fun ErrorRetryBannerPreview() {
+    ChargeRouteTheme(darkTheme = false) {
+        ErrorRetryBanner(
+            errorMessage = "No se pudo calcular la ruta",
+            onRetry = {},
+            onOpenSavedRoute = {}
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.chargeroute.app.presentation.screens.station
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,14 +47,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BrandPrimary
+import com.chargeroute.app.core.theme.ChargeRouteTheme
+import com.chargeroute.app.domain.model.Station
 import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
+import com.chargeroute.app.presentation.preview.PreviewData
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,14 +94,14 @@ fun StationDetailScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
+                            contentDescription = stringResource(R.string.common_back),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },
                 actions = {
                     Text(
-                        text = "PARADA DEL VIAJE",
+                        text = stringResource(R.string.station_header),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(end = 16.dp)
@@ -137,7 +144,7 @@ fun StationDetailScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Ir al cargador",
+                                text = stringResource(R.string.station_go_to_charger),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -155,269 +162,343 @@ fun StationDetailScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "Carga en ${station.name.replace("Punto de carga ", "").replace("Estación ", "")}",
+                text = stringResource(
+                    R.string.station_title,
+                    station.name.replace("Punto de carga ", "").replace("Estación ", "")
+                ),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Tarjeta de la estacion
-            TouchAccessibleCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = station.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = station.address,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        IconButton(onClick = {}) {
-                            Icon(
-                                imageVector = Icons.Default.BookmarkBorder,
-                                contentDescription = "Guardar",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Availability badge
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(BatteryGreen.copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (station.totalCount > 0) {
-                                "${station.totalCount} puntos de carga • Disponibilidad no informada"
-                            } else {
-                                "Disponibilidad no informada • Confirmá antes de viajar"
-                            },
-                            color = BatteryGreen,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Conectores y potencia",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    station.connectors.forEach { conn ->
-                        val isCarCompatible = vehicle?.supportedConnectors?.contains(conn.type) ?: conn.isCompatible
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.ElectricBolt,
-                                    contentDescription = null,
-                                    tint = if (isCarCompatible) BrandPrimary else MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "${conn.type.displayName} • ${conn.powerKw.toInt()} kW ${if (conn.powerKw >= 50) "DC" else "AC"}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isCarCompatible) FontWeight.SemiBold else FontWeight.Normal
-                                )
-                            }
-                            Text(
-                                text = if (isCarCompatible) "Compatible" else "No compatible",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (isCarCompatible) BatteryGreen else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Tu ${vehicle?.model ?: "vehículo"} acepta hasta ${vehicle?.maxDcKw?.toInt() ?: 77} kW de carga rápida DC.",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            StationInfoCard(station = station, vehicle = vehicle)
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Tarjeta de la carga planificada
-            TouchAccessibleCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Tu carga planificada",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "${stop.arrivalBatteryPercent}% → ${stop.departureBatteryPercent}%",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = BrandPrimary
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(
-                                text = "${stop.stopDurationMinutes} min",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "${stop.arrivalTime}-${stop.departureTime}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = String.format(Locale.US, "%.1f kWh", stop.chargedEnergyKwh),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = BrandPrimary
-                            )
-                            Text(
-                                text = "Energía a cargar",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Amenities icons
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("24 h", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Coffee, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Café", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Wc, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Baños", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
+            PlannedChargeCard(stop = stop)
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Actualizar nivel de batería tras la carga
-            TouchAccessibleCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Actualizar batería tras la carga",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Ajustá el porcentaje real obtenido en la estación:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Batería cargada: $simulatedBatteryAfterCharge%",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = BrandPrimary
-                        )
-                    }
-
-                    Slider(
-                        value = simulatedBatteryAfterCharge.toFloat(),
-                        onValueChange = { simulatedBatteryAfterCharge = it.toInt() },
-                        valueRange = 20f..100f,
-                        colors = SliderDefaults.colors(
-                            thumbColor = BrandPrimary,
-                            activeTrackColor = BrandPrimary
-                        )
-                    )
-                }
-            }
+            BatteryAfterChargeCard(
+                batteryPercent = simulatedBatteryAfterCharge,
+                onBatteryChange = { simulatedBatteryAfterCharge = it }
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Caution disclaimer
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = BrandPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Cargador de ejemplo. Confirmá disponibilidad y funcionamiento antes de viajar.",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            DisclaimerRow()
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+// Tarjeta de la estacion
+@Composable
+private fun StationInfoCard(station: Station, vehicle: Vehicle?) {
+    TouchAccessibleCard(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = station.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = station.address,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = {}) {
+                    Icon(
+                        imageVector = Icons.Default.BookmarkBorder,
+                        contentDescription = stringResource(R.string.station_save),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Availability badge
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(BatteryGreen.copy(alpha = 0.15f))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (station.totalCount > 0) {
+                        stringResource(R.string.station_availability_with_count, station.totalCount)
+                    } else {
+                        stringResource(R.string.station_availability_unknown)
+                    },
+                    color = BatteryGreen,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = stringResource(R.string.station_connectors_title),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            station.connectors.forEach { conn ->
+                val isCarCompatible = vehicle?.supportedConnectors?.contains(conn.type) ?: conn.isCompatible
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.ElectricBolt,
+                            contentDescription = null,
+                            tint = if (isCarCompatible) BrandPrimary else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.station_connector_line,
+                                conn.type.displayName,
+                                conn.powerKw.toInt(),
+                                if (conn.powerKw >= 50) "DC" else "AC"
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isCarCompatible) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                    }
+                    Text(
+                        text = if (isCarCompatible) {
+                            stringResource(R.string.station_compatible)
+                        } else {
+                            stringResource(R.string.station_not_compatible)
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isCarCompatible) BatteryGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(
+                    R.string.station_vehicle_max_power,
+                    vehicle?.model ?: stringResource(R.string.station_vehicle_default),
+                    vehicle?.maxDcKw?.toInt() ?: 77
+                ),
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// Tarjeta de la carga planificada
+@Composable
+private fun PlannedChargeCard(stop: TripStop) {
+    TouchAccessibleCard(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.station_planned_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(
+                        R.string.station_charge_range,
+                        stop.arrivalBatteryPercent,
+                        stop.departureBatteryPercent
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = BrandPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.station_duration_min, stop.stopDurationMinutes),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${stop.arrivalTime}-${stop.departureTime}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Column {
+                    Text(
+                        text = stringResource(
+                            R.string.station_energy_kwh,
+                            String.format(Locale.US, "%.1f", stop.chargedEnergyKwh)
+                        ),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = BrandPrimary
+                    )
+                    Text(
+                        text = stringResource(R.string.station_energy_label),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Amenities icons
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.station_amenity_hours), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Coffee, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.station_amenity_cafe), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Wc, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.station_amenity_restrooms), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+// Actualizar nivel de batería tras la carga
+@Composable
+private fun BatteryAfterChargeCard(batteryPercent: Int, onBatteryChange: (Int) -> Unit) {
+    TouchAccessibleCard(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.station_update_battery_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(R.string.station_update_battery_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.station_battery_charged, batteryPercent),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandPrimary
+                )
+            }
+
+            Slider(
+                value = batteryPercent.toFloat(),
+                onValueChange = { onBatteryChange(it.toInt()) },
+                valueRange = 20f..100f,
+                colors = SliderDefaults.colors(
+                    thumbColor = BrandPrimary,
+                    activeTrackColor = BrandPrimary
+                )
+            )
+        }
+    }
+}
+
+// Caution disclaimer
+@Composable
+private fun DisclaimerRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Info,
+            contentDescription = null,
+            tint = BrandPrimary,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.station_disclaimer),
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun StationDetailScreenPreview() {
+    ChargeRouteTheme(darkTheme = false) {
+        StationDetailScreen(
+            stop = PreviewData.stop,
+            vehicle = PreviewData.vehicle,
+            onUpdateBatteryAfterCharge = {},
+            onNavigateToCharger = {},
+            onBackClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun StationDetailScreenDarkPreview() {
+    ChargeRouteTheme(darkTheme = true) {
+        StationDetailScreen(
+            stop = PreviewData.stop,
+            vehicle = PreviewData.vehicle,
+            onUpdateBatteryAfterCharge = {},
+            onNavigateToCharger = {},
+            onBackClick = {}
+        )
     }
 }
