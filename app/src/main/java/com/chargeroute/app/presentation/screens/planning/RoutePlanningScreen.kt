@@ -1,7 +1,5 @@
 package com.chargeroute.app.presentation.screens.planning
 
-import android.Manifest
-import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -62,7 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
+import com.chargeroute.app.core.location.LocationPermission
 import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BatteryRed
 import com.chargeroute.app.core.theme.BrandPrimary
@@ -81,6 +79,7 @@ fun RoutePlanningScreen(
     onDestinationTextChange: (String) -> Unit,
     onSwapClick: () -> Unit,
     onGpsClick: () -> Unit,
+    onLocationPermissionGranted: () -> Unit,
     onLocationPermissionDenied: () -> Unit,
     onCalculateClick: () -> Unit,
     onPreviewClick: () -> Unit,
@@ -91,29 +90,33 @@ fun RoutePlanningScreen(
 ) {
     var destinationMenuExpanded by remember { mutableStateOf(false) }
 
-    // Si no hay permiso de ubicacion lo pide al tocar el boton de GPS
+    // Permiso de ubicacion: se pide al entrar (para usar la ubicacion actual como origen)
+    // o al tocar el boton de GPS. Si se rechaza, el origen se escribe a mano.
     val context = LocalContext.current
+    var permissionAskedFromGpsButton by remember { mutableStateOf(false) }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
-        if (result.values.any { it }) onGpsClick() else onLocationPermissionDenied()
+        when {
+            result.values.none { it } -> onLocationPermissionDenied()
+            permissionAskedFromGpsButton -> onGpsClick()
+            else -> onLocationPermissionGranted()
+        }
+        permissionAskedFromGpsButton = false
+    }
+    LaunchedEffect(Unit) {
+        if (LocationPermission.isGranted(context)) {
+            onLocationPermissionGranted()
+        } else {
+            locationPermissionLauncher.launch(LocationPermission.REQUESTED)
+        }
     }
     val onGpsButtonClick = {
-        val granted = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        if (granted) {
+        if (LocationPermission.isGranted(context)) {
             onGpsClick()
         } else {
-            locationPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
+            permissionAskedFromGpsButton = true
+            locationPermissionLauncher.launch(LocationPermission.REQUESTED)
         }
     }
 

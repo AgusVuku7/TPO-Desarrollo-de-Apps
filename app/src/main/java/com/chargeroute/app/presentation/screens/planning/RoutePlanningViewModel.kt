@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.core.location.LocationClient
 import com.chargeroute.app.domain.model.BatteryLevels
+import com.chargeroute.app.domain.model.KnownCities
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.NoConnectionException
 import com.chargeroute.app.domain.model.RoutePlan
@@ -13,39 +14,25 @@ import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.domain.usecase.CalculateRouteUseCase
 import com.chargeroute.app.domain.usecase.GeocodeAddressUseCase
-import com.chargeroute.app.domain.usecase.GetOfflineRouteUseCase
 import com.chargeroute.app.domain.usecase.SaveTripUseCase
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class ArgentineCity(
-    val name: String,
-    val address: String,
-    val latitude: Double,
-    val longitude: Double
-)
-
 data class RoutePlanningUiState(
-    val origin: LocationPoint = LocationPoint(
-        name = "Buenos Aires (Obelisco)",
-        address = "Av. 9 de Julio y Corrientes, CABA",
-        latitude = -34.6037,
-        longitude = -58.3816
-    ),
-    val destination: LocationPoint = LocationPoint(
-        name = "Mar del Plata (Plaza Colón)",
-        address = "Av. Patricio Peralta Ramos 2200, Mar del Plata",
-        latitude = -38.0055,
-        longitude = -57.5432
-    ),
-    val originInputText: String = "Buenos Aires (Obelisco)",
-    val destinationInputText: String = "Mar del Plata (Plaza Colón)",
+    val origin: LocationPoint = KnownCities.OBELISCO,
+    val destination: LocationPoint = KnownCities.DEFAULT_DESTINATION,
+    val originInputText: String = KnownCities.OBELISCO.name,
+    val destinationInputText: String = KnownCities.DEFAULT_DESTINATION.name,
     val vehicle: Vehicle? = null,
     val initialBatteryPercent: Int = BatteryLevels.DEFAULT_INITIAL_PERCENT,
     val acActive: Boolean = true,
@@ -53,37 +40,29 @@ data class RoutePlanningUiState(
     val calculatedPlan: RoutePlan? = null,
     val errorMessage: String? = null,
     val infoNotice: String? = null,
-    val createdTripId: String? = null,
     val recentTrips: List<Trip> = emptyList(),
     val addressOptions: List<LocationPoint> = emptyList(),
     val optionsAreForOrigin: Boolean = true
 )
 
+// Eventos de una sola vez (no son estado): la pantalla los escucha para navegar
+sealed interface RoutePlanningEvent {
+    data class TripCreated(val tripId: String) : RoutePlanningEvent
+}
+
 class RoutePlanningViewModel(
     private val calculateRouteUseCase: CalculateRouteUseCase,
     private val saveTripUseCase: SaveTripUseCase,
-    private val getOfflineRouteUseCase: GetOfflineRouteUseCase,
     private val locationClient: LocationClient,
     private val geocodeAddressUseCase: GeocodeAddressUseCase,
     private val tripRepository: TripRepository
 ) : ViewModel() {
 
-    // Diccionario de ciudades argentinas para autocompletado y geocodificación precisa
-    val argentineCities = listOf(
-        ArgentineCity("Buenos Aires (Obelisco)", "Av. 9 de Julio y Corrientes, CABA", -34.6037, -58.3816),
-        ArgentineCity("Mar del Plata", "Av. Patricio Peralta Ramos 2200, Mar del Plata", -38.0055, -57.5432),
-        ArgentineCity("Dolores", "Autovía 2 km 210, Dolores, Buenos Aires", -36.3132, -57.6792),
-        ArgentineCity("Chascomús", "Costanera España y Av. Lastra, Chascomús", -35.5786, -58.0125),
-        ArgentineCity("Pinamar", "Av. Bunge y Av. Shaw, Pinamar", -37.1084, -56.8587),
-        ArgentineCity("Villa Gesell", "Av. Buenos Aires y Av. 3, Villa Gesell", -37.2642, -56.9731),
-        ArgentineCity("Tandil", "Plaza Independencia, Tandil", -37.3217, -59.1332),
-        ArgentineCity("La Plata", "Plaza Moreno, Calle 12 y 51, La Plata", -34.9214, -57.9545),
-        ArgentineCity("Rosario", "Monumento a la Bandera, Rosario, Santa Fe", -32.9468, -60.6393),
-        ArgentineCity("Córdoba Capital", "Plaza San Martín, Córdoba", -31.4201, -64.1888)
-    )
-
     private val _uiState = MutableStateFlow(RoutePlanningUiState())
     val uiState: StateFlow<RoutePlanningUiState> = _uiState.asStateFlow()
+
+    private val _events = MutableSharedFlow<RoutePlanningEvent>()
+    val events: SharedFlow<RoutePlanningEvent> = _events.asSharedFlow()
 
     init {
         loadRecentTrips()
@@ -178,6 +157,9 @@ class RoutePlanningViewModel(
 
             _uiState.update { it.copy(destination = destination) }
             return Pair(origin, destination)
+        } catch (e: CancellationException) {
+            // Si se cancelo la corrutina no es un error de red: se deja seguir la cancelacion
+            throw e
         } catch (_: Exception) {
             _uiState.update {
                 it.copy(isLoading = false, errorMessage = "No se pudo buscar la dirección. Revisá tu conexión.")
@@ -220,25 +202,18 @@ class RoutePlanningViewModel(
 
     private var defaultOriginTried = false
 
-    // Al abrir la pantalla intenta poner la ubicacion actual como origen.
-    // Si no hay permiso, no hay señal o no esta en Argentina, queda el origen de siempre.
+    // Al abrir la pantalla (con permiso) intenta poner la ubicacion actual como origen.
+    // Si no hay señal o no esta en Argentina, queda el origen de siempre.
     fun loadDefaultOrigin() {
-        if (defaultOriginTried) return
+        if (!locationClient.hasPermission() || defaultOriginTried) return
         defaultOriginTried = true
-        if (!locationClient.hasPermission()) return
         val untouchedText = _uiState.value.originInputText
         viewModelScope.launch {
             val loc = locationClient.getCurrentLocation() ?: return@launch
-            val inArgentina = loc.latitude in -56.0..-21.0 && loc.longitude in -74.0..-53.0
-            if (!inArgentina) return@launch
+            if (!isInArgentina(loc.latitude, loc.longitude)) return@launch
             // Si mientras tanto el usuario escribio otro origen, no se lo pisa
             if (_uiState.value.originInputText != untouchedText) return@launch
-            val point = LocationPoint(
-                name = "Mi ubicación GPS",
-                address = String.format(Locale.US, "Lat: %.4f, Lon: %.4f", loc.latitude, loc.longitude),
-                latitude = loc.latitude,
-                longitude = loc.longitude
-            )
+            val point = gpsPoint(loc.latitude, loc.longitude)
             _uiState.update {
                 it.copy(origin = point, originInputText = point.name, calculatedPlan = null)
             }
@@ -260,33 +235,40 @@ class RoutePlanningViewModel(
     }
 
     fun updateOriginInput(text: String) {
-        _uiState.update { it.copy(originInputText = text, calculatedPlan = null, addressOptions = emptyList()) }
-        // Busca entre las ciudades conocidas; si no esta, queda como direccion a buscar
-        val matched = argentineCities.firstOrNull { it.name.contains(text, ignoreCase = true) }
-        if (matched != null) {
-            _uiState.update {
-                it.copy(origin = LocationPoint(matched.name, matched.address, matched.latitude, matched.longitude))
-            }
-        } else {
-            _uiState.update {
-                it.copy(origin = it.origin.copy(name = text, address = CUSTOM_ADDRESS))
-            }
+        _uiState.update {
+            it.copy(
+                originInputText = text,
+                origin = pointForText(text, it.origin),
+                calculatedPlan = null,
+                addressOptions = emptyList()
+            )
         }
     }
 
     fun updateDestinationInput(text: String) {
-        _uiState.update { it.copy(destinationInputText = text, calculatedPlan = null, addressOptions = emptyList()) }
-        val matched = argentineCities.firstOrNull { it.name.contains(text, ignoreCase = true) }
-        if (matched != null) {
-            _uiState.update {
-                it.copy(destination = LocationPoint(matched.name, matched.address, matched.latitude, matched.longitude))
-            }
-        } else {
-            _uiState.update {
-                it.copy(destination = it.destination.copy(name = text, address = CUSTOM_ADDRESS))
-            }
+        _uiState.update {
+            it.copy(
+                destinationInputText = text,
+                destination = pointForText(text, it.destination),
+                calculatedPlan = null,
+                addressOptions = emptyList()
+            )
         }
     }
+
+    // Busca entre las ciudades conocidas; si no esta, queda como direccion a buscar
+    private fun pointForText(text: String, current: LocationPoint): LocationPoint =
+        KnownCities.findByName(text) ?: current.copy(name = text, address = CUSTOM_ADDRESS)
+
+    private fun isInArgentina(latitude: Double, longitude: Double): Boolean =
+        latitude in ARGENTINA_LATITUDES && longitude in ARGENTINA_LONGITUDES
+
+    private fun gpsPoint(latitude: Double, longitude: Double) = LocationPoint(
+        name = GPS_POINT_NAME,
+        address = String.format(Locale.US, "Lat: %.4f, Lon: %.4f", latitude, longitude),
+        latitude = latitude,
+        longitude = longitude
+    )
 
     fun swapOriginDestination() {
         _uiState.update {
@@ -316,19 +298,8 @@ class RoutePlanningViewModel(
         viewModelScope.launch {
             val loc = locationClient.getCurrentLocation()
             if (loc != null) {
-                val lat = loc.latitude
-                val lon = loc.longitude
-
-                // Verificamos si las coordenadas están en territorio argentino
-                val isInsideArgentina = lat in -56.0..-21.0 && lon in -74.0..-53.0
-
-                if (isInsideArgentina) {
-                    val point = LocationPoint(
-                        name = "Mi ubicación GPS",
-                        address = String.format(Locale.US, "Lat: %.4f, Lon: %.4f", lat, lon),
-                        latitude = lat,
-                        longitude = lon
-                    )
+                if (isInArgentina(loc.latitude, loc.longitude)) {
+                    val point = gpsPoint(loc.latitude, loc.longitude)
                     _uiState.update {
                         it.copy(
                             origin = point,
@@ -340,11 +311,10 @@ class RoutePlanningViewModel(
                 } else {
                     // Detección de emulador con coordenadas default (California, EE.UU.)
                     // Para evitar el error de cálculo de 13.000 km, fijamos Buenos Aires Obelisco
-                    val obelisco = argentineCities.first()
                     _uiState.update {
                         it.copy(
-                            origin = LocationPoint(obelisco.name, obelisco.address, obelisco.latitude, obelisco.longitude),
-                            originInputText = obelisco.name,
+                            origin = KnownCities.OBELISCO,
+                            originInputText = KnownCities.OBELISCO.name,
                             calculatedPlan = null,
                             infoNotice = "Emulador detectado con GPS de EE.UU. Se fijó el origen en Buenos Aires (Obelisco) para calcular distancias viales reales en Argentina."
                         )
@@ -358,7 +328,7 @@ class RoutePlanningViewModel(
         }
     }
 
-    fun calculateRoute(onSuccess: (String) -> Unit) {
+    fun calculateRoute() {
         val currentState = _uiState.value
         val vehicle = currentState.vehicle ?: return
 
@@ -397,12 +367,12 @@ class RoutePlanningViewModel(
                     it.copy(
                         isLoading = false,
                         calculatedPlan = plan,
-                        createdTripId = tripId,
                         errorMessage = null
                     )
                 }
                 loadRecentTrips()
-                onSuccess(tripId)
+                // El viaje ya quedo guardado en Room (se puede abrir desde Mis viajes): el evento solo avisa para navegar
+                _events.emit(RoutePlanningEvent.TripCreated(tripId))
             }.onFailure { err ->
                 _uiState.update {
                     it.copy(
@@ -425,5 +395,10 @@ class RoutePlanningViewModel(
 
     companion object {
         private const val CUSTOM_ADDRESS = "Ubicación personalizada"
+        private const val GPS_POINT_NAME = "Mi ubicación GPS"
+
+        // Rectangulo aproximado que contiene a la Argentina
+        private val ARGENTINA_LATITUDES = -56.0..-21.0
+        private val ARGENTINA_LONGITUDES = -74.0..-53.0
     }
 }

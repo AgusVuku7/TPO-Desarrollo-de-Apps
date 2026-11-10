@@ -6,17 +6,12 @@ import com.chargeroute.app.core.di.DefaultAppContainer
 
 class ChargeRouteApp : Application() {
 
+    // Contenedor con las dependencias de toda la app (se crea una sola vez)
     lateinit var container: AppContainer
         private set
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
         container = DefaultAppContainer(this)
-    }
-
-    companion object {
-        lateinit var instance: ChargeRouteApp
-            private set
     }
 }

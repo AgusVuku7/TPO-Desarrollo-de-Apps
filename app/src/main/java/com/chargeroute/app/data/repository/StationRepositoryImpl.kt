@@ -8,6 +8,7 @@ import com.chargeroute.app.domain.model.ConnectorType
 import com.chargeroute.app.domain.model.Station
 import com.chargeroute.app.domain.model.StationFilter
 import com.chargeroute.app.domain.repository.StationRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -56,6 +57,8 @@ class StationRepositoryImpl(
             } else {
                 null
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             null
         }

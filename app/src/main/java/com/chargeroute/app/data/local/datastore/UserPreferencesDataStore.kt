@@ -24,7 +24,7 @@ class UserPreferencesDataStore(private val context: Context) {
         val modeStr = preferences[KEY_THEME_MODE] ?: ThemeMode.SYSTEM.name
         try {
             ThemeMode.valueOf(modeStr)
-        } catch (_: Exception) {
+        } catch (_: IllegalArgumentException) {
             ThemeMode.SYSTEM
         }
     }

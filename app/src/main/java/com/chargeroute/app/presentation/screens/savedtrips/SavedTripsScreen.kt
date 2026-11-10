@@ -27,55 +27,24 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.domain.model.Trip
-import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class SavedTripsViewModel(
-    private val tripRepository: TripRepository
-) : ViewModel() {
-    private val _savedTrips = MutableStateFlow<List<Trip>>(emptyList())
-    val savedTrips: StateFlow<List<Trip>> = _savedTrips.asStateFlow()
-
-    // Se vuelve a leer cada vez que se abre el historial, asi aparecen los viajes nuevos
-    fun refresh() {
-        viewModelScope.launch {
-            _savedTrips.value = tripRepository.getSavedTrips().firstOrNull() ?: emptyList()
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SavedTripsScreen(
-    viewModel: SavedTripsViewModel,
+    trips: List<Trip>,
     onTripClick: (Trip) -> Unit,
     onBackClick: () -> Unit
 ) {
-    val trips by viewModel.savedTrips.collectAsState()
-
-    LaunchedEffect(Unit) {
-        viewModel.refresh()
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(

@@ -13,13 +13,11 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -27,7 +25,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.chargeroute.app.ChargeRouteApp
+import com.chargeroute.app.core.di.AppContainer
 import com.chargeroute.app.core.theme.ThemeMode
 import com.chargeroute.app.presentation.components.OfflineBanner
 import com.chargeroute.app.presentation.screens.arrival.ArrivalScreen
@@ -37,6 +35,7 @@ import com.chargeroute.app.presentation.screens.login.LoginScreen
 import com.chargeroute.app.presentation.screens.navigation.ActiveNavigationScreen
 import com.chargeroute.app.presentation.screens.navigation.ActiveNavigationViewModel
 import com.chargeroute.app.presentation.screens.planning.RoutePlanningScreen
+import com.chargeroute.app.presentation.screens.planning.RoutePlanningEvent
 import com.chargeroute.app.presentation.screens.planning.RoutePlanningViewModel
 import com.chargeroute.app.presentation.screens.savedtrips.SavedTripsScreen
 import com.chargeroute.app.presentation.screens.savedtrips.SavedTripsViewModel
@@ -50,13 +49,13 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavHost(
+    container: AppContainer,
     currentThemeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val container = ChargeRouteApp.instance.container
 
     val carSetupViewModel: CarSetupViewModel = viewModel {
         CarSetupViewModel(container.getVehicleCatalogUseCase)
@@ -66,7 +65,6 @@ fun AppNavHost(
         RoutePlanningViewModel(
             container.calculateRouteUseCase,
             container.saveTripUseCase,
-            container.getOfflineRouteUseCase,
             container.locationClient,
             container.geocodeAddressUseCase,
             container.tripRepository
@@ -74,10 +72,7 @@ fun AppNavHost(
     }
 
     val routeSummaryViewModel: RouteSummaryViewModel = viewModel {
-        RouteSummaryViewModel(
-            container.tripRepository,
-            container.getOfflineRouteUseCase
-        )
+        RouteSummaryViewModel(container.tripRepository)
     }
 
     val activeNavigationViewModel: ActiveNavigationViewModel = viewModel {
@@ -90,11 +85,9 @@ fun AppNavHost(
     }
 
     // El GPS se pausa cuando la app sale de pantalla y se retoma al volver (RNF05)
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        activeNavigationViewModel.pauseGpsTracking()
-    }
-    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+    LifecycleStartEffect(activeNavigationViewModel) {
         activeNavigationViewModel.resumeGpsTracking()
+        onStopOrDispose { activeNavigationViewModel.pauseGpsTracking() }
     }
 
     val savedTripsViewModel: SavedTripsViewModel = viewModel {
@@ -110,7 +103,7 @@ fun AppNavHost(
         gesturesEnabled = drawerState.isOpen,
         drawerContent = {
             ModalDrawerSheet {
-                val savedTrips by savedTripsViewModel.savedTrips.collectAsState()
+                val savedTrips by savedTripsViewModel.savedTrips.collectAsStateWithLifecycle()
                 // Cada vez que se abre el menu se actualiza la cantidad de viajes
                 LaunchedEffect(drawerState.isOpen) {
                     if (drawerState.isOpen) savedTripsViewModel.refresh()
@@ -175,7 +168,7 @@ fun AppNavHost(
 
                 // 2. Car Setup (Paso 1 de 3)
                 composable(Screen.CarSetup.route) {
-                    val state by carSetupViewModel.uiState.collectAsState()
+                    val state by carSetupViewModel.uiState.collectAsStateWithLifecycle()
                     CarSetupScreen(
                         state = state,
                         onVehicleSelected = { carSetupViewModel.selectVehicle(it) },
@@ -197,8 +190,18 @@ fun AppNavHost(
 
                 // 3. Route Planning (Paso 2 de 3)
                 composable(Screen.RoutePlanning.route) {
-                    val state by routePlanningViewModel.uiState.collectAsState()
-                    LaunchedEffect(Unit) { routePlanningViewModel.loadDefaultOrigin() }
+                    val state by routePlanningViewModel.uiState.collectAsStateWithLifecycle()
+                    // Cuando el viaje queda calculado y guardado, se pasa al resumen
+                    LaunchedEffect(Unit) {
+                        routePlanningViewModel.events.collect { event ->
+                            when (event) {
+                                is RoutePlanningEvent.TripCreated -> {
+                                    routeSummaryViewModel.loadTrip(event.tripId)
+                                    navController.navigate(Screen.RouteSummary.createRoute(event.tripId))
+                                }
+                            }
+                        }
+                    }
                     RoutePlanningScreen(
                         state = state,
                         onOriginTextChange = { routePlanningViewModel.updateOriginInput(it) },
@@ -208,13 +211,9 @@ fun AppNavHost(
                         onAddressOptionClick = { routePlanningViewModel.selectAddressOption(it) },
                         onSwapClick = { routePlanningViewModel.swapOriginDestination() },
                         onGpsClick = { routePlanningViewModel.useCurrentLocationAsOrigin() },
+                        onLocationPermissionGranted = { routePlanningViewModel.loadDefaultOrigin() },
                         onLocationPermissionDenied = { routePlanningViewModel.onLocationPermissionDenied() },
-                        onCalculateClick = {
-                            routePlanningViewModel.calculateRoute { tripId ->
-                                routeSummaryViewModel.loadTrip(tripId)
-                                navController.navigate(Screen.RouteSummary.createRoute(tripId))
-                            }
-                        },
+                        onCalculateClick = { routePlanningViewModel.calculateRoute() },
                         onBackClick = { navController.popBackStack() },
                         onOpenSavedRoute = {
                             navController.navigate(Screen.SavedTrips.route)
@@ -232,7 +231,7 @@ fun AppNavHost(
                     LaunchedEffect(tripId) {
                         routeSummaryViewModel.loadTrip(tripId)
                     }
-                    val state by routeSummaryViewModel.uiState.collectAsState()
+                    val state by routeSummaryViewModel.uiState.collectAsStateWithLifecycle()
 
                     RouteSummaryScreen(
                         state = state,
@@ -258,7 +257,7 @@ fun AppNavHost(
                 ) { backStackEntry ->
                     val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
                     val stopId = backStackEntry.arguments?.getString(Screen.ARG_STOP_ID) ?: ""
-                    val summaryState by routeSummaryViewModel.uiState.collectAsState()
+                    val summaryState by routeSummaryViewModel.uiState.collectAsStateWithLifecycle()
                     val stop = summaryState.trip?.routePlan?.stops?.firstOrNull { it.id == stopId }
                         ?: summaryState.trip?.routePlan?.stops?.firstOrNull()
 
@@ -282,7 +281,7 @@ fun AppNavHost(
                     arguments = listOf(navArgument(Screen.ARG_TRIP_ID) { type = NavType.StringType })
                 ) { backStackEntry ->
                     val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
-                    val state by activeNavigationViewModel.uiState.collectAsState()
+                    val state by activeNavigationViewModel.uiState.collectAsStateWithLifecycle()
 
                     ActiveNavigationScreen(
                         state = state,
@@ -319,7 +318,7 @@ fun AppNavHost(
                     arguments = listOf(navArgument(Screen.ARG_TRIP_ID) { type = NavType.StringType })
                 ) { backStackEntry ->
                     val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
-                    val navState by activeNavigationViewModel.uiState.collectAsState()
+                    val navState by activeNavigationViewModel.uiState.collectAsStateWithLifecycle()
 
                     ArrivalScreen(
                         trip = navState.trip,
@@ -341,8 +340,11 @@ fun AppNavHost(
 
                 // Viajes guardados
                 composable(Screen.SavedTrips.route) {
+                    val trips by savedTripsViewModel.savedTrips.collectAsStateWithLifecycle()
+                    // Se vuelve a leer al entrar, asi aparecen los viajes nuevos
+                    LaunchedEffect(Unit) { savedTripsViewModel.refresh() }
                     SavedTripsScreen(
-                        viewModel = savedTripsViewModel,
+                        trips = trips,
                         onTripClick = { trip ->
                             routeSummaryViewModel.loadTrip(trip.id)
                             navController.navigate(Screen.RouteSummary.createRoute(trip.id))
@@ -353,8 +355,10 @@ fun AppNavHost(
 
                 // Cargadores donde se paro en los viajes guardados
                 composable(Screen.UsedChargers.route) {
+                    val chargers by usedChargersViewModel.chargers.collectAsStateWithLifecycle()
+                    LaunchedEffect(Unit) { usedChargersViewModel.refresh() }
                     UsedChargersScreen(
-                        viewModel = usedChargersViewModel,
+                        chargers = chargers,
                         onChargerClick = { charger ->
                             routeSummaryViewModel.loadTrip(charger.lastTripId)
                             navController.navigate(

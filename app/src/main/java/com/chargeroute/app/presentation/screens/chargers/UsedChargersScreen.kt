@@ -26,58 +26,25 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.domain.model.UsedCharger
-import com.chargeroute.app.domain.model.UsedChargers
-import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class UsedChargersViewModel(
-    private val tripRepository: TripRepository
-) : ViewModel() {
-    private val _chargers = MutableStateFlow<List<UsedCharger>>(emptyList())
-    val chargers: StateFlow<List<UsedCharger>> = _chargers.asStateFlow()
-
-    // Sale de los viajes guardados en Room, asi que funciona sin conexion
-    fun refresh() {
-        viewModelScope.launch {
-            val trips = tripRepository.getSavedTrips().firstOrNull() ?: emptyList()
-            _chargers.value = UsedChargers.fromTrips(trips)
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UsedChargersScreen(
-    viewModel: UsedChargersViewModel,
+    chargers: List<UsedCharger>,
     onChargerClick: (UsedCharger) -> Unit,
     onBackClick: () -> Unit
 ) {
-    val chargers by viewModel.chargers.collectAsState()
-
-    LaunchedEffect(Unit) {
-        viewModel.refresh()
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
