@@ -63,12 +63,11 @@
     <string name="carsetup_next">Siguiente</string>
     <string name="carsetup_title">Conozcamos tu auto</string>
     <string name="carsetup_subtitle">Calculamos tu ruta con los datos reales de tu vehículo eléctrico.</string>
-    <string name="carsetup_vehicle_section">Vehículo eléctrico (Mercado Argentino)</string>
-    <string name="carsetup_vehicle_label">Vehículo</string>
-    <string name="carsetup_vehicle_subtitle">%1$s • %2$s</string>
+    <string name="carsetup_vehicle_section">Elegí tu auto</string>
     <string name="carsetup_change">Cambiar</string>
     <string name="carsetup_back_to_brands">Volver a las marcas</string>
     <string name="carsetup_vehicle_option_detail">%1$s • %2$s km declarados • %3$s kWh/100 km</string>
+    <string name="carsetup_vehicle_option_detail_no_version">%1$s km declarados • %2$s kWh/100 km</string>
     <string name="carsetup_spec_title">Ficha del auto</string>
     <string name="carsetup_autocompleted">Autocompletado</string>
     <string name="carsetup_kwh_value">%1$s kWh</string>

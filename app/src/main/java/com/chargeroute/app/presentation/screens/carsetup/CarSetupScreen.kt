@@ -236,9 +236,9 @@ private fun VehicleSelectorSection(
     // Un solo cuadro: primero se elige la marca y despues el modelo en la misma lista
     Box {
         VehicleSelectorBox(
-            label = stringResource(R.string.carsetup_vehicle_label),
             value = "${selected.brand} ${selected.model}",
-            subtitle = stringResource(R.string.carsetup_vehicle_subtitle, selected.year, selected.version),
+            // Solo el año: la version y la bateria ya se ven en la lista y en la ficha
+            subtitle = selected.year.toString(),
             onClick = {
                 menuBrand = null
                 vehicleMenuExpanded = true
@@ -286,13 +286,22 @@ private fun VehicleSelectorSection(
                                     text = vehicle.model,
                                     fontWeight = FontWeight.Bold
                                 )
+                                // La version distingue modelos repetidos (ej. Dolphin Mini GL y GS)
                                 Text(
-                                    text = stringResource(
-                                        R.string.carsetup_vehicle_option_detail,
-                                        vehicle.version,
-                                        vehicle.wltpRangeKm.toInt(),
-                                        vehicle.baseConsumptionKwhPer100Km
-                                    ),
+                                    text = if (vehicle.version.isBlank()) {
+                                        stringResource(
+                                            R.string.carsetup_vehicle_option_detail_no_version,
+                                            vehicle.wltpRangeKm.toInt(),
+                                            vehicle.baseConsumptionKwhPer100Km
+                                        )
+                                    } else {
+                                        stringResource(
+                                            R.string.carsetup_vehicle_option_detail,
+                                            vehicle.version,
+                                            vehicle.wltpRangeKm.toInt(),
+                                            vehicle.baseConsumptionKwhPer100Km
+                                        )
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -549,95 +558,90 @@ private fun BatteryCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.carsetup_battery_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = stringResource(R.string.carsetup_battery_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Botones -/+ y campo de %, en su propia fila para que el "+" no quede aplastado
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
             ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.carsetup_battery_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                FilledIconButton(
+                    onClick = { onBatteryChanged(state.initialBatteryPercent - 5) },
+                    modifier = Modifier.size(44.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
-                    Text(
-                        text = stringResource(R.string.carsetup_battery_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                ) {
+                    Icon(
+                        Icons.Default.Remove,
+                        contentDescription = stringResource(R.string.carsetup_minus_5)
                     )
                 }
 
-                // Caja de ingreso directo editable de %
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    FilledIconButton(
-                        onClick = { onBatteryChanged(state.initialBatteryPercent - 5) },
-                        modifier = Modifier.size(44.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Icon(
-                            Icons.Default.Remove,
-                            contentDescription = stringResource(R.string.carsetup_minus_5)
-                        )
-                    }
+                var textInput by remember(state.initialBatteryPercent) {
+                    mutableStateOf(state.initialBatteryPercent.toString())
+                }
 
-                    var textInput by remember(state.initialBatteryPercent) {
-                        mutableStateOf(state.initialBatteryPercent.toString())
-                    }
-
-                    OutlinedTextField(
-                        value = textInput,
-                        onValueChange = { newVal ->
-                            val digitsOnly = newVal.filter { it.isDigit() }.take(3)
-                            val parsed = digitsOnly.toIntOrNull()
-                            // Nunca se puede escribir mas de 100%
-                            textInput = if (parsed != null && parsed > 100) "100" else digitsOnly
-                            if (parsed != null) {
-                                onBatteryChanged(parsed.coerceIn(5, 100))
-                            }
-                        },
-                        modifier = Modifier.width(74.dp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { focusManager.clearFocus() }
-                        ),
-                        textStyle = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = BrandPrimary
-                        ),
-                        suffix = {
-                            Text(
-                                text = stringResource(R.string.carsetup_percent_suffix),
-                                fontWeight = FontWeight.Bold
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BrandPrimary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                OutlinedTextField(
+                    value = textInput,
+                    onValueChange = { newVal ->
+                        val digitsOnly = newVal.filter { it.isDigit() }.take(3)
+                        val parsed = digitsOnly.toIntOrNull()
+                        // Nunca se puede escribir mas de 100%
+                        textInput = if (parsed != null && parsed > 100) "100" else digitsOnly
+                        if (parsed != null) {
+                            onBatteryChanged(parsed.coerceIn(5, 100))
+                        }
+                    },
+                    modifier = Modifier.width(74.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { focusManager.clearFocus() }
+                    ),
+                    textStyle = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = BrandPrimary
+                    ),
+                    suffix = {
+                        Text(
+                            text = stringResource(R.string.carsetup_percent_suffix),
+                            fontWeight = FontWeight.Bold
                         )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BrandPrimary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
+                )
 
-                    FilledIconButton(
-                        onClick = { onBatteryChanged(state.initialBatteryPercent + 5) },
-                        modifier = Modifier.size(44.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = stringResource(R.string.carsetup_plus_5)
-                        )
-                    }
+                FilledIconButton(
+                    onClick = { onBatteryChanged(state.initialBatteryPercent + 5) },
+                    modifier = Modifier.size(44.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(R.string.carsetup_plus_5)
+                    )
                 }
             }
 
@@ -686,7 +690,6 @@ private fun BatteryCard(
 
 @Composable
 private fun VehicleSelectorBox(
-    label: String,
     value: String,
     subtitle: String?,
     onClick: () -> Unit
@@ -722,11 +725,6 @@ private fun VehicleSelectorBox(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                     Text(
                         text = value,
                         style = MaterialTheme.typography.titleMedium,
