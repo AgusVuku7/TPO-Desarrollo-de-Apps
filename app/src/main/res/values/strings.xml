@@ -176,9 +176,6 @@
     <string name="station_duration_min">%1$d min</string>
     <string name="station_energy_kwh">%1$s kWh</string>
     <string name="station_energy_label">Energía a cargar</string>
-    <string name="station_amenity_hours">24 h</string>
-    <string name="station_amenity_cafe">Café</string>
-    <string name="station_amenity_restrooms">Baños</string>
     <string name="station_update_battery_title">Actualizar batería tras la carga</string>
     <string name="station_update_battery_hint">Ajustá el porcentaje real obtenido en la estación:</string>
     <string name="station_battery_charged">Batería cargada: %1$d%%</string>
