@@ -18,7 +18,7 @@ class VehicleRepositoryImpl(
             brand = "Renault",
             model = "Kwid E-Tech",
             year = 2024,
-            version = "Intens - 26.8 kWh",
+            version = "Intens",
             usableBatteryKwh = 26.8,
             wltpRangeKm = 298.0,
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -30,7 +30,7 @@ class VehicleRepositoryImpl(
             brand = "Renault",
             model = "Megane E-Tech",
             year = 2024,
-            version = "EV60 Optimum Charge - 60 kWh",
+            version = "EV60 Optimum Charge",
             usableBatteryKwh = 60.0,
             wltpRangeKm = 450.0,
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -42,7 +42,7 @@ class VehicleRepositoryImpl(
             brand = "Hyundai",
             model = "Kona Electric",
             year = 2023,
-            version = "Long Range - 64 kWh",
+            version = "Long Range",
             usableBatteryKwh = 64.0,
             wltpRangeKm = 484.0,
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -54,7 +54,7 @@ class VehicleRepositoryImpl(
             brand = "Nissan",
             model = "Leaf",
             year = 2023,
-            version = "Tekna - 40 kWh",
+            version = "Tekna",
             usableBatteryKwh = 40.0,
             wltpRangeKm = 270.0,
             supportedConnectors = listOf(ConnectorType.CHADEMO, ConnectorType.TYPE_2),
@@ -66,7 +66,7 @@ class VehicleRepositoryImpl(
             brand = "Peugeot",
             model = "e-2008",
             year = 2024,
-            version = "GT - 54 kWh",
+            version = "GT",
             usableBatteryKwh = 54.0,
             wltpRangeKm = 406.0,
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -78,7 +78,7 @@ class VehicleRepositoryImpl(
             brand = "Ford",
             model = "Mustang Mach-E",
             year = 2024,
-            version = "Premium AWD - 91 kWh",
+            version = "Premium AWD",
             usableBatteryKwh = 91.0,
             wltpRangeKm = 540.0,
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -90,7 +90,7 @@ class VehicleRepositoryImpl(
             brand = "Audi",
             model = "e-tron",
             year = 2023,
-            version = "55 quattro - 95 kWh",
+            version = "55 quattro",
             usableBatteryKwh = 95.0,
             wltpRangeKm = 436.0,
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -102,7 +102,7 @@ class VehicleRepositoryImpl(
             brand = "Mercedes-Benz",
             model = "EQA",
             year = 2024,
-            version = "350 4MATIC - 66.5 kWh",
+            version = "350 4MATIC",
             usableBatteryKwh = 66.5,
             wltpRangeKm = 430.0,
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -114,7 +114,7 @@ class VehicleRepositoryImpl(
             brand = "Volvo",
             model = "EX30",
             year = 2024,
-            version = "Extended Range - 69 kWh",
+            version = "Extended Range",
             usableBatteryKwh = 69.0,
             wltpRangeKm = 476.0,
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -126,7 +126,7 @@ class VehicleRepositoryImpl(
             brand = "Coradir",
             model = "Tito",
             year = 2024,
-            version = "5P Nacional - 8 kWh",
+            version = "5P Nacional",
             usableBatteryKwh = 8.0,
             wltpRangeKm = 100.0,
             supportedConnectors = listOf(ConnectorType.TYPE_2, ConnectorType.SCHUKO),
@@ -143,7 +143,7 @@ class VehicleRepositoryImpl(
             brand = "JMEV",
             model = "Easy 3",
             year = 2026,
-            version = "30.2 kWh",
+            version = "",
             usableBatteryKwh = 30.24,
             wltpRangeKm = 330.0, // CLTC
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -155,7 +155,7 @@ class VehicleRepositoryImpl(
             brand = "BYD",
             model = "Dolphin Mini",
             year = 2026,
-            version = "GL - 30.1 kWh",
+            version = "GL",
             usableBatteryKwh = 30.08,
             wltpRangeKm = 280.0, // NEDC
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -167,7 +167,7 @@ class VehicleRepositoryImpl(
             brand = "BYD",
             model = "Dolphin Mini",
             year = 2026,
-            version = "GS - 43.2 kWh",
+            version = "GS",
             usableBatteryKwh = 43.2,
             wltpRangeKm = 380.0, // NEDC
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -179,7 +179,7 @@ class VehicleRepositoryImpl(
             brand = "BYD",
             model = "Yuan Pro",
             year = 2026,
-            version = "GS - 45.1 kWh",
+            version = "GS",
             usableBatteryKwh = 45.12,
             wltpRangeKm = 380.0, // NEDC
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2), // conector estimado
@@ -191,7 +191,7 @@ class VehicleRepositoryImpl(
             brand = "GWM",
             model = "Ora 03",
             year = 2026,
-            version = "48 kWh",
+            version = "",
             usableBatteryKwh = 45.4, // 48 kWh totales, 45.4 utiles
             wltpRangeKm = 310.0, // WLTP
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -203,7 +203,7 @@ class VehicleRepositoryImpl(
             brand = "GAC",
             model = "Aion ES",
             year = 2026,
-            version = "55.2 kWh",
+            version = "",
             usableBatteryKwh = 55.2,
             wltpRangeKm = 442.0, // ciclo no informado
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2), // conector estimado
@@ -215,7 +215,7 @@ class VehicleRepositoryImpl(
             brand = "GAC",
             model = "Aion UT",
             year = 2026,
-            version = "Premium - 60 kWh",
+            version = "Premium",
             usableBatteryKwh = 60.0,
             wltpRangeKm = 500.0, // ciclo no informado
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2), // conector estimado
@@ -227,7 +227,7 @@ class VehicleRepositoryImpl(
             brand = "Geely",
             model = "EX5",
             year = 2026,
-            version = "Pro - 60.2 kWh",
+            version = "Pro",
             usableBatteryKwh = 60.22,
             wltpRangeKm = 430.0, // ciclo no informado
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2), // conector estimado
@@ -239,7 +239,7 @@ class VehicleRepositoryImpl(
             brand = "Chevrolet",
             model = "Spark EUV",
             year = 2026,
-            version = "42 kWh",
+            version = "",
             usableBatteryKwh = 42.0,
             wltpRangeKm = 360.0, // NEDC
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2), // conector estimado
@@ -251,7 +251,7 @@ class VehicleRepositoryImpl(
             brand = "Volvo",
             model = "EX30",
             year = 2026,
-            version = "Core - 51 kWh",
+            version = "Core",
             usableBatteryKwh = 51.0,
             wltpRangeKm = 405.0, // ciclo no informado
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -263,7 +263,7 @@ class VehicleRepositoryImpl(
             brand = "Toyota",
             model = "bZ4X",
             year = 2026,
-            version = "73 kWh",
+            version = "",
             usableBatteryKwh = 73.0,
             wltpRangeKm = 515.0, // WLTP Europa
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
@@ -275,7 +275,7 @@ class VehicleRepositoryImpl(
             brand = "Audi",
             model = "Q6 e-tron",
             year = 2026,
-            version = "50 quattro - 100 kWh",
+            version = "50 quattro",
             usableBatteryKwh = 94.9, // 100 kWh totales, 94.9 utiles
             wltpRangeKm = 625.0, // WLTP Europa
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),

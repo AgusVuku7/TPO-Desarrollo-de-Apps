@@ -20,7 +20,7 @@ object PreviewData {
         brand = "Hyundai",
         model = "Kona Electric",
         year = 2023,
-        version = "Long Range - 64 kWh",
+        version = "Long Range",
         usableBatteryKwh = 64.0,
         wltpRangeKm = 484.0,
         supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
