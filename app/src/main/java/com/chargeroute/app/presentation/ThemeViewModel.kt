@@ -18,7 +18,7 @@ class ThemeViewModel(
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = userPreferences.themeMode
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.SYSTEM)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.LIGHT)
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { userPreferences.setThemeMode(mode) }

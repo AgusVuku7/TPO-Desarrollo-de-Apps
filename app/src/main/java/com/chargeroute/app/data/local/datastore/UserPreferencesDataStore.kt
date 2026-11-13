@@ -17,11 +17,12 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class UserPreferencesDataStore(private val context: Context) {
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
-        val modeStr = preferences[KEY_THEME_MODE] ?: ThemeMode.SYSTEM.name
+        val modeStr = preferences[KEY_THEME_MODE] ?: ThemeMode.LIGHT.name
+        // Un valor viejo que ya no existe (por ejemplo "SYSTEM") vuelve a claro
         try {
             ThemeMode.valueOf(modeStr)
         } catch (_: IllegalArgumentException) {
-            ThemeMode.SYSTEM
+            ThemeMode.LIGHT
         }
     }
 
