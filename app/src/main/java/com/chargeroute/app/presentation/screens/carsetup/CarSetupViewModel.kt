@@ -8,6 +8,7 @@ import com.chargeroute.app.domain.usecase.GetVehicleCatalogUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -52,12 +53,12 @@ class CarSetupViewModel(
 
     private fun loadVehicles() {
         val vehicles = getVehicleCatalogUseCase.getAvailableVehicles()
-        val defaultVehicle = vehicles.firstOrNull { it.id == "hyundai_kona_2023" } ?: vehicles.first()
-        _uiState.update {
-            it.copy(
-                availableVehicles = vehicles,
-                selectedVehicle = defaultVehicle
-            )
+        _uiState.update { it.copy(availableVehicles = vehicles) }
+        viewModelScope.launch {
+            // Se lee una sola vez el auto guardado en DataStore.
+            // Si todavia no se eligio ninguno, el repositorio devuelve el auto por defecto.
+            val savedVehicle = getVehicleCatalogUseCase.getDefaultVehicle().first()
+            _uiState.update { it.copy(selectedVehicle = savedVehicle) }
         }
     }
 
