@@ -49,11 +49,12 @@ import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.core.theme.ThemeMode
+import com.chargeroute.app.presentation.preview.PreviewData
 
 @Composable
 fun SidebarDrawer(
-    userName: String = "Sofía Martín",
-    userEmail: String = "sofia.martin@gmail.com",
+    userName: String,
+    userEmail: String,
     savedTripsCount: Int = 1,
     currentThemeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
@@ -174,16 +175,19 @@ private fun ProfileCard(userName: String, userEmail: String) {
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column {
+            // El invitado no tiene nombre ni mail guardados
             Text(
-                text = userName,
+                text = userName.ifBlank { stringResource(R.string.sidebar_guest_name) },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
-            Text(
-                text = userEmail,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (userEmail.isNotBlank()) {
+                Text(
+                    text = userEmail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -416,8 +420,8 @@ private fun ThemeTab(
 private fun SidebarDrawerPreview() {
     ChargeRouteTheme(darkTheme = false) {
         SidebarDrawer(
-            userName = "Sofía Martín",
-            userEmail = "sofia.martin@gmail.com",
+            userName = PreviewData.userName,
+            userEmail = PreviewData.userEmail,
             savedTripsCount = 2,
             currentThemeMode = ThemeMode.SYSTEM,
             onThemeModeChange = {},
@@ -435,8 +439,8 @@ private fun SidebarDrawerPreview() {
 private fun SidebarDrawerDarkPreview() {
     ChargeRouteTheme(darkTheme = true) {
         SidebarDrawer(
-            userName = "Sofía Martín",
-            userEmail = "sofia.martin@gmail.com",
+            userName = PreviewData.userName,
+            userEmail = PreviewData.userEmail,
             savedTripsCount = 2,
             currentThemeMode = ThemeMode.SYSTEM,
             onThemeModeChange = {},

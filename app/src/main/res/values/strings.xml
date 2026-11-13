@@ -10,13 +10,17 @@
     <string name="login_illustration_caption">Rutas inteligentes para tu auto eléctrico</string>
     <string name="login_title">Tu ruta eléctrica,\nsin sorpresas</string>
     <string name="login_subtitle">Elegí tu destino. Nosotros planificamos las cargas para que disfrutes el camino.</string>
-    <string name="login_google_letter">G</string>
-    <string name="login_continue_google">Continuar con Google</string>
+    <string name="login_name_label">Nombre</string>
+    <string name="login_name_error">Ingresá tu nombre</string>
+    <string name="login_email_label">Mail</string>
+    <string name="login_email_error">Ingresá un mail válido</string>
+    <string name="login_submit">Ingresar</string>
     <string name="login_continue_guest">Continuar como invitado</string>
     <string name="login_terms">Al continuar, aceptás nuestros Términos y condiciones y la Política de privacidad.</string>
 
     <!-- Menu lateral -->
     <string name="sidebar_close_menu">Cerrar menú</string>
+    <string name="sidebar_guest_name">Invitado</string>
     <string name="sidebar_plan_trip">Planificar viaje</string>
     <string name="sidebar_my_trips">Mis viajes</string>
     <string name="sidebar_my_chargers">Mis cargadores</string>

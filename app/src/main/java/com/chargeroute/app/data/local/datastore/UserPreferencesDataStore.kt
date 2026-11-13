@@ -3,10 +3,12 @@ package com.chargeroute.app.data.local.datastore
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.chargeroute.app.core.theme.ThemeMode
+import com.chargeroute.app.domain.model.UserSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -39,23 +41,29 @@ class UserPreferencesDataStore(private val context: Context) {
         }
     }
 
-    val userName: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[KEY_USER_NAME] ?: "Sofía Martín"
+    // Sesion del usuario: si no hay nada guardado, no hay sesion iniciada
+    val session: Flow<UserSession> = context.dataStore.data.map { preferences ->
+        UserSession(
+            isLoggedIn = preferences[KEY_IS_LOGGED_IN] ?: false,
+            userName = preferences[KEY_USER_NAME] ?: "",
+            userEmail = preferences[KEY_USER_EMAIL] ?: ""
+        )
     }
 
-    val userEmail: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[KEY_USER_EMAIL] ?: "sofia.martin@gmail.com"
-    }
-
-    val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        (preferences[KEY_IS_LOGGED_IN] ?: "true") == "true"
-    }
-
-    suspend fun setLoggedIn(isLoggedIn: Boolean, name: String = "Sofía Martín", email: String = "sofia.martin@gmail.com") {
+    suspend fun login(name: String, email: String) {
         context.dataStore.edit { preferences ->
-            preferences[KEY_IS_LOGGED_IN] = isLoggedIn.toString()
+            preferences[KEY_IS_LOGGED_IN] = true
             preferences[KEY_USER_NAME] = name
             preferences[KEY_USER_EMAIL] = email
+        }
+    }
+
+    // Borra solo el perfil: el tema y el auto elegido se mantienen
+    suspend fun logout() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(KEY_IS_LOGGED_IN)
+            preferences.remove(KEY_USER_NAME)
+            preferences.remove(KEY_USER_EMAIL)
         }
     }
 
@@ -65,6 +73,6 @@ class UserPreferencesDataStore(private val context: Context) {
         val KEY_SELECTED_VEHICLE_ID = stringPreferencesKey("selected_vehicle_id")
         val KEY_USER_NAME = stringPreferencesKey("user_name")
         val KEY_USER_EMAIL = stringPreferencesKey("user_email")
-        val KEY_IS_LOGGED_IN = stringPreferencesKey("is_logged_in")
+        val KEY_IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
     }
 }
