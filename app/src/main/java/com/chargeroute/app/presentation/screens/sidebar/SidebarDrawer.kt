@@ -398,7 +398,7 @@ private fun ThemeTab(
         shape = RoundedCornerShape(8.dp),
         color = if (selected) BrandPrimary else Color.Transparent,
         modifier = Modifier
-            .height(36.dp)
+            .height(44.dp) // RNF02
             .padding(horizontal = 2.dp)
     ) {
         Box(
@@ -423,7 +423,7 @@ private fun SidebarDrawerPreview() {
             userName = PreviewData.userName,
             userEmail = PreviewData.userEmail,
             savedTripsCount = 2,
-            currentThemeMode = ThemeMode.SYSTEM,
+            currentThemeMode = ThemeMode.LIGHT,
             onThemeModeChange = {},
             onNavigateToPlan = {},
             onNavigateToSavedTrips = {},
@@ -442,7 +442,7 @@ private fun SidebarDrawerDarkPreview() {
             userName = PreviewData.userName,
             userEmail = PreviewData.userEmail,
             savedTripsCount = 2,
-            currentThemeMode = ThemeMode.SYSTEM,
+            currentThemeMode = ThemeMode.DARK,
             onThemeModeChange = {},
             onNavigateToPlan = {},
             onNavigateToSavedTrips = {},

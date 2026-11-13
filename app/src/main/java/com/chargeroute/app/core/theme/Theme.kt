@@ -62,8 +62,8 @@ private val LightColorScheme = lightColorScheme(
     error = BatteryRed
 )
 
+// Son las tres opciones del menu. Si no hay nada guardado se usa LIGHT.
 enum class ThemeMode {
-    SYSTEM,
     LIGHT,
     DARK,
     AUTO_SENSOR // Uses TYPE_LIGHT ambient sensor (RNF04, RNF05)
