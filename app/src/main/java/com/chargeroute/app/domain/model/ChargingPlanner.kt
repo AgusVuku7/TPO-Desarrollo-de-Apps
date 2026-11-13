@@ -26,7 +26,10 @@ data class ChargingPlan(
  *
  * Algoritmo (greedy): mientras la bateria no alcance para llegar al destino con reserva,
  * se elige la estacion MAS LEJANA a la que se llega, se carga y se repite desde ahi.
- * Elegir siempre la mas lejana minimiza la cantidad de paradas.
+ * Elegir la mas lejana suele minimizar la cantidad de paradas.
+ *
+ * Excepcion: si un poco antes de la mas lejana hay un cargador claramente mas rapido
+ * para este auto, se para en ese, porque se pierde menos tiempo cargando.
  *
  * Es Kotlin puro (sin Android ni red), asi se prueba con tests unitarios.
  */
@@ -44,6 +47,12 @@ object ChargingPlanner {
     // Desde este porcentaje la carga se hace mas lenta (a la mitad de potencia)
     const val SLOW_CHARGE_FROM_PERCENT = 80.0
     const val SLOW_CHARGE_FACTOR = 0.5
+
+    // Cuantos km antes de la estacion mas lejana se busca un cargador mas rapido
+    const val FAST_CHARGER_WINDOW_KM = 50.0
+
+    // Solo se cambia de estacion si la otra carga al menos 1,5 veces mas rapido
+    const val FAST_CHARGER_MIN_GAIN = 1.5
 
     // Tope para que nunca quede en un ciclo infinito
     private const val MAX_STOPS = 10
@@ -74,14 +83,16 @@ object ChargingPlanner {
             // Primero las que se alcanzan con reserva; si no hay, las que se alcanzan aunque sea justo
             val withReserve = ahead.filter { arrivalAt(it) >= SAFETY_RESERVE_PERCENT }
             val reachable = withReserve.ifEmpty { ahead.filter { arrivalAt(it) >= 0.0 } }
-            val next = reachable.maxByOrNull { it.km } ?: break // no hay ninguna estacion alcanzable
+            val farthest = reachable.maxByOrNull { it.km } ?: break // no hay ninguna estacion alcanzable
+            val next = fasterNearby(farthest, reachable, vehicle) ?: farthest
 
             val arrival = arrivalAt(next)
             val neededToFinish = percentUsed(routeKm - next.km) + SAFETY_RESERVE_PERCENT
             val departure = neededToFinish.coerceIn(maxOf(MIN_CHARGE_PERCENT, arrival), 100.0)
 
             val energyKwh = (departure - arrival) / 100.0 * vehicle.usableBatteryKwh
-            val chargeKw = minOf(stationPowerKw(next.station, vehicle), vehicle.maxDcKw)
+            val stationKw = knownPowerKw(next.station, vehicle) ?: DEFAULT_STATION_KW
+            val chargeKw = minOf(stationKw, vehicle.maxDcKw)
             val minutes = chargeMinutes(arrival, departure, vehicle.usableBatteryKwh, chargeKw)
 
             stops.add(
@@ -132,9 +143,36 @@ object ChargingPlanner {
         return ceil((fastHours + slowHours) * 60.0 - 0.0001).toInt().coerceAtLeast(5)
     }
 
-    // Potencia del mejor conector compatible con el auto (o la potencia por defecto)
-    private fun stationPowerKw(station: Station, vehicle: Vehicle): Double =
+    /**
+     * Busca, entre las estaciones alcanzables que estan hasta FAST_CHARGER_WINDOW_KM antes
+     * de la mas lejana, la que carga mas rapido a este auto.
+     * Devuelve null si ninguna es claramente mas rapida que la mas lejana.
+     */
+    private fun fasterNearby(
+        farthest: StationOnRoute,
+        reachable: List<StationOnRoute>,
+        vehicle: Vehicle
+    ): StationOnRoute? {
+        // Se ordenan de la mas lejana a la mas cercana: si dos empatan en potencia, queda la mas lejana
+        val fastest = reachable
+            .filter { farthest.km - it.km <= FAST_CHARGER_WINDOW_KM }
+            .sortedByDescending { it.km }
+            .maxByOrNull { usefulKw(it.station, vehicle) } ?: return null
+
+        val fastestKw = usefulKw(fastest.station, vehicle)
+        val farthestKw = usefulKw(farthest.station, vehicle)
+        val isClearlyFaster = fastestKw > farthestKw && fastestKw >= farthestKw * FAST_CHARGER_MIN_GAIN
+        return if (isClearlyFaster) fastest else null
+    }
+
+    // Potencia que el auto puede aprovechar en esa estacion: la del cargador, con el tope del auto.
+    // Para comparar, una estacion sin dato de potencia vale 0: no le gana a una con dato real.
+    private fun usefulKw(station: Station, vehicle: Vehicle): Double =
+        minOf(knownPowerKw(station, vehicle) ?: 0.0, vehicle.maxDcKw)
+
+    // Potencia del mejor conector compatible con el auto (null si la estacion no la informa)
+    private fun knownPowerKw(station: Station, vehicle: Vehicle): Double? =
         station.connectors
             .filter { it.type in vehicle.supportedConnectors && it.powerKw > 0 }
-            .maxOfOrNull { it.powerKw } ?: DEFAULT_STATION_KW
+            .maxOfOrNull { it.powerKw }
 }
