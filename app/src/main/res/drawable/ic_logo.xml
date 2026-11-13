@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo de RouteCharge para usar dentro de la app (mismo dibujo que el icono).
+     El color lo pone cada pantalla con el tint del Icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="70"
+    android:viewportHeight="70">
+    <group
+        android:translateX="-19"
+        android:translateY="-20">
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M54,20C38,20 27,32 27,47C27,66 54,90 54,90C54,90 81,66 81,47C81,32 70,20 54,20ZM58,30L43,50L52,50L49,66L65,45L56,45Z" />
+    </group>
+</vector>
