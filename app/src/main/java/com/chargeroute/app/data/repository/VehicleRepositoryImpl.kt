@@ -20,7 +20,7 @@ class VehicleRepositoryImpl(
             year = 2024,
             version = "Intens",
             usableBatteryKwh = 26.8,
-            wltpRangeKm = 298.0,
+            wltpRangeKm = 265.0, // WLTP mixto (los 298 km de Renault son solo en ciudad)
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
             maxDcKw = 30.0,
             baseConsumptionKwhPer100Km = 14.2
@@ -184,7 +184,7 @@ class VehicleRepositoryImpl(
             wltpRangeKm = 380.0, // NEDC
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2), // conector estimado
             maxDcKw = 85.0, // estimado
-            baseConsumptionKwhPer100Km = 18.0
+            baseConsumptionKwhPer100Km = 15.0 // promedio de pruebas de manejo
         ),
         Vehicle(
             id = "gwm_ora_03",
@@ -196,7 +196,7 @@ class VehicleRepositoryImpl(
             wltpRangeKm = 310.0, // WLTP
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
             maxDcKw = 60.0,
-            baseConsumptionKwhPer100Km = 14.0
+            baseConsumptionKwhPer100Km = 16.7 // WLTP
         ),
         Vehicle(
             id = "gac_aion_es",
@@ -205,10 +205,10 @@ class VehicleRepositoryImpl(
             year = 2026,
             version = "",
             usableBatteryKwh = 55.2,
-            wltpRangeKm = 442.0, // ciclo no informado
+            wltpRangeKm = 442.0, // NEDC
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2), // conector estimado
             maxDcKw = 80.0, // estimado
-            baseConsumptionKwhPer100Km = 18.0
+            baseConsumptionKwhPer100Km = 15.2 // sale de los 364 km WLTP
         ),
         Vehicle(
             id = "gac_aion_ut",
@@ -253,10 +253,10 @@ class VehicleRepositoryImpl(
             year = 2026,
             version = "Core",
             usableBatteryKwh = 51.0,
-            wltpRangeKm = 405.0, // ciclo no informado
+            wltpRangeKm = 339.0, // WLTP
             supportedConnectors = listOf(ConnectorType.CCS2, ConnectorType.TYPE_2),
             maxDcKw = 134.0, // estimado
-            baseConsumptionKwhPer100Km = 18.0
+            baseConsumptionKwhPer100Km = 17.1 // WLTP
         ),
         Vehicle(
             id = "toyota_bz4x",
