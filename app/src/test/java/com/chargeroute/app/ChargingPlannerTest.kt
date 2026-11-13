@@ -63,6 +63,60 @@ class ChargingPlannerTest {
         assertEquals(20, plan.arrivalBatteryPercent)
     }
 
+    // En los tests que siguen la mas lejana alcanzable es la del km 150 (50 kW) y el auto admite 100 kW
+
+    @Test
+    fun prefersAFasterChargerCloseToTheFarthest() {
+        // La del km 120 esta 30 km antes y carga al doble: conviene parar ahi
+        val stations = listOf(stationAt(120.0, kw = 100.0), stationAt(150.0, kw = 50.0))
+
+        val plan = ChargingPlanner.plan(300.0, stations, vehicle, consumption, 80)
+
+        assertEquals(listOf(120.0), plan.stops.map { it.km })
+        assertTrue(plan.reachesDestination)
+    }
+
+    @Test
+    fun ignoresAFasterChargerThatIsTooFarBack() {
+        // La del km 90 es mas rapida, pero esta 60 km antes (mas que la ventana de 50 km)
+        val stations = listOf(stationAt(90.0, kw = 100.0), stationAt(150.0, kw = 50.0))
+
+        val plan = ChargingPlanner.plan(300.0, stations, vehicle, consumption, 80)
+
+        assertEquals(listOf(150.0), plan.stops.map { it.km })
+    }
+
+    @Test
+    fun aSmallPowerDifferenceKeepsTheFarthest() {
+        // 60 kW contra 50 kW no llega a 1,5 veces: no vale la pena parar antes
+        val stations = listOf(stationAt(120.0, kw = 60.0), stationAt(150.0, kw = 50.0))
+
+        val plan = ChargingPlanner.plan(300.0, stations, vehicle, consumption, 80)
+
+        assertEquals(listOf(150.0), plan.stops.map { it.km })
+    }
+
+    @Test
+    fun powerAboveTheCarLimitDoesNotCount() {
+        // Para un auto que admite 50 kW, un cargador de 150 kW carga igual que uno de 50 kW
+        val slowCar = vehicle.copy(maxDcKw = 50.0)
+        val stations = listOf(stationAt(120.0, kw = 150.0), stationAt(150.0, kw = 50.0))
+
+        val plan = ChargingPlanner.plan(300.0, stations, slowCar, consumption, 80)
+
+        assertEquals(listOf(150.0), plan.stops.map { it.km })
+    }
+
+    @Test
+    fun aStationWithoutPowerDataLosesAgainstAKnownOne() {
+        // La del km 150 no informa potencia (0 kW): se prefiere la del km 120, que si la informa
+        val stations = listOf(stationAt(120.0, kw = 50.0), stationAt(150.0, kw = 0.0))
+
+        val plan = ChargingPlanner.plan(300.0, stations, vehicle, consumption, 80)
+
+        assertEquals(listOf(120.0), plan.stops.map { it.km })
+    }
+
     @Test
     fun longTripGetsSeveralStops() {
         // 600 km con estaciones cada 100 km: necesita parar en los km 100, 300 y 500
