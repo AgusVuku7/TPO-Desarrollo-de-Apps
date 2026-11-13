@@ -179,7 +179,7 @@
     <string name="station_update_battery_title">Actualizar batería tras la carga</string>
     <string name="station_update_battery_hint">Ajustá el porcentaje real obtenido en la estación:</string>
     <string name="station_battery_charged">Batería cargada: %1$d%%</string>
-    <string name="station_disclaimer">Cargador de ejemplo. Confirmá disponibilidad y funcionamiento antes de viajar.</string>
+    <string name="station_disclaimer">Datos de OpenChargeMap. Confirmá disponibilidad y funcionamiento antes de viajar.</string>
 
     <!-- Navegacion activa -->
     <string name="nav_exit">Salir de la navegación</string>
