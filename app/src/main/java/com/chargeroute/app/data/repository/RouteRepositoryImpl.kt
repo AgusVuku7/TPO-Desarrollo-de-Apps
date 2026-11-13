@@ -156,7 +156,8 @@ class RouteRepositoryImpl(
                 polylinePoints = polylinePoints,
                 encodedPolyline = encodedPolyline,
                 arrivalBatteryPercent = finalArrivalBatteryPercent,
-                consumptionKwhPer100Km = (consumptionKwhPer100Km * 10.0).toInt() / 10.0,
+                // Se guarda sin redondear: las pantallas lo muestran con un decimal (antes se cortaba y 17,05 salía 17,0)
+                consumptionKwhPer100Km = consumptionKwhPer100Km,
                 calculatedAtMillis = now,
                 directDistanceKm = directDistanceKm,
                 departureTime = clock(0),
