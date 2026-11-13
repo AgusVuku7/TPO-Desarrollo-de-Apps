@@ -24,6 +24,15 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = DarkTextPrimary,
     surfaceVariant = DarkSurfaceElevated,
     onSurfaceVariant = DarkTextSecondary,
+    // Colores que usan por defecto el slider, los menus desplegables y el menu lateral.
+    // Si no se definen, Material 3 pone sus colores de base (lilas).
+    secondaryContainer = DarkBorder,
+    onSecondaryContainer = DarkTextPrimary,
+    surfaceContainerLowest = DarkBackground,
+    surfaceContainerLow = DarkSurface,
+    surfaceContainer = DarkSurfaceElevated,
+    surfaceContainerHigh = DarkSurfaceElevated,
+    surfaceContainerHighest = DarkSurfaceElevated,
     outline = DarkBorder,
     error = BatteryRed
 )
@@ -41,6 +50,14 @@ private val LightColorScheme = lightColorScheme(
     onSurface = LightTextPrimary,
     surfaceVariant = LightSurfaceElevated,
     onSurfaceVariant = LightTextSecondary,
+    // Mismo motivo que en el tema oscuro
+    secondaryContainer = LightBorder,
+    onSecondaryContainer = LightTextPrimary,
+    surfaceContainerLowest = LightSurface,
+    surfaceContainerLow = LightSurface,
+    surfaceContainer = LightSurface,
+    surfaceContainerHigh = LightSurfaceElevated,
+    surfaceContainerHighest = LightSurfaceElevated,
     outline = LightBorder,
     error = BatteryRed
 )
