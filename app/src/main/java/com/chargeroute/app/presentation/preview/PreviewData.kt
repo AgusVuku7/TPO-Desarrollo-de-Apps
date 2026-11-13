@@ -15,6 +15,9 @@ import com.chargeroute.app.domain.model.Vehicle
  */
 object PreviewData {
 
+    const val userName = "Sofía Martín"
+    const val userEmail = "sofia.martin@gmail.com"
+
     val vehicle = Vehicle(
         id = "hyundai_kona_2023",
         brand = "Hyundai",

@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,7 +32,9 @@ import com.chargeroute.app.presentation.components.OfflineBanner
 import com.chargeroute.app.presentation.screens.arrival.ArrivalScreen
 import com.chargeroute.app.presentation.screens.carsetup.CarSetupScreen
 import com.chargeroute.app.presentation.screens.carsetup.CarSetupViewModel
+import com.chargeroute.app.presentation.SessionViewModel
 import com.chargeroute.app.presentation.screens.login.LoginScreen
+import com.chargeroute.app.presentation.screens.login.LoginViewModel
 import com.chargeroute.app.presentation.screens.navigation.ActiveNavigationScreen
 import com.chargeroute.app.presentation.screens.navigation.ActiveNavigationViewModel
 import com.chargeroute.app.presentation.screens.planning.RoutePlanningScreen
@@ -56,6 +59,19 @@ fun AppNavHost(
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    val sessionViewModel: SessionViewModel = viewModel {
+        SessionViewModel(container.userPreferences)
+    }
+    // Hasta que DataStore no devuelve la sesion (null) no se dibuja nada, para no mostrar el login de mas
+    val sessionState by sessionViewModel.session.collectAsStateWithLifecycle()
+    val session = sessionState ?: return
+
+    // Con sesion guardada se saltea el login. Se calcula una sola vez: iniciar o cerrar
+    // sesion despues navega a mano, no cambia la pantalla inicial
+    val startDestination = rememberSaveable {
+        if (session.isLoggedIn) Screen.CarSetup.route else Screen.Login.route
+    }
 
     val carSetupViewModel: CarSetupViewModel = viewModel {
         CarSetupViewModel(container.getVehicleCatalogUseCase)
@@ -105,8 +121,8 @@ fun AppNavHost(
             ModalDrawerSheet {
                 val savedTrips by savedTripsViewModel.savedTrips.collectAsStateWithLifecycle()
                 SidebarDrawer(
-                    userName = "Sofía Martín",
-                    userEmail = "sofia.martin@gmail.com",
+                    userName = session.userName,
+                    userEmail = session.userEmail,
                     savedTripsCount = savedTrips.size,
                     currentThemeMode = currentThemeMode,
                     onThemeModeChange = onThemeModeChange,
@@ -121,6 +137,8 @@ fun AppNavHost(
                         navController.navigate(Screen.UsedChargers.route)
                     },
                     onLogout = {
+                        // Borra el perfil guardado y vuelve al login
+                        sessionViewModel.logout()
                         scope.launch { drawerState.close() }
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
@@ -148,17 +166,33 @@ fun AppNavHost(
         ) {
             NavHost(
                 navController = navController,
-                startDestination = Screen.Login.route
+                startDestination = startDestination
             ) {
                 // 1. Login
                 composable(Screen.Login.route) {
-                    LoginScreen(
-                        onLoginSuccess = {
-                            // Sin volver al login con "atrás"; para eso está Cerrar sesión
-                            navController.navigate(Screen.CarSetup.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
-                            }
+                    val loginViewModel: LoginViewModel = viewModel {
+                        LoginViewModel(container.userPreferences)
+                    }
+                    val state by loginViewModel.uiState.collectAsStateWithLifecycle()
+
+                    // Sin volver al login con "atrás"; para eso está Cerrar sesión
+                    val goToCarSetup = {
+                        navController.navigate(Screen.CarSetup.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                            launchSingleTop = true
                         }
+                    }
+                    // Cuando el perfil queda guardado, se pasa a la pantalla del auto
+                    LaunchedEffect(Unit) {
+                        loginViewModel.loginDone.collect { goToCarSetup() }
+                    }
+                    LoginScreen(
+                        state = state,
+                        onNameChange = { loginViewModel.onNameChange(it) },
+                        onEmailChange = { loginViewModel.onEmailChange(it) },
+                        onLoginClick = { loginViewModel.login() },
+                        // El invitado entra sin guardar nada
+                        onGuestClick = goToCarSetup
                     )
                 }
 

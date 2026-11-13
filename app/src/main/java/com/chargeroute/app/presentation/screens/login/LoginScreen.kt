@@ -13,15 +13,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,27 +36,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.core.theme.ChargeRouteTheme
+import com.chargeroute.app.presentation.preview.PreviewData
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit
+    state: LoginUiState,
+    onNameChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onLoginClick: () -> Unit,
+    onGuestClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
+        // Con scroll, para que el teclado no tape los campos
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Encabezado: logo y nombre de la app
             Row(
@@ -90,7 +103,7 @@ fun LoginScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(240.dp)
+                    .height(180.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
@@ -142,46 +155,59 @@ fun LoginScreen(
                 )
             }
 
-            // Botones de inicio de sesion
+            // Formulario y botones de inicio de sesion
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Continuar con Google
+                // Formulario del login simulado: nombre y mail
+                OutlinedTextField(
+                    value = state.name,
+                    onValueChange = onNameChange,
+                    label = { Text(stringResource(R.string.login_name_label)) },
+                    isError = state.nameError,
+                    supportingText = {
+                        if (state.nameError) Text(stringResource(R.string.login_name_error))
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = state.email,
+                    onValueChange = onEmailChange,
+                    label = { Text(stringResource(R.string.login_email_label)) },
+                    isError = state.emailError,
+                    supportingText = {
+                        if (state.emailError) Text(stringResource(R.string.login_email_error))
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { onLoginClick() }),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
                 Button(
-                    onClick = onLoginSuccess,
+                    onClick = onLoginClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(54.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    shape = RoundedCornerShape(28.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.login_google_letter),
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 20.sp,
-                            color = BrandPrimary,
-                            modifier = Modifier.padding(end = 12.dp)
-                        )
-                        Text(
-                            text = stringResource(R.string.login_continue_google),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
+                    Text(
+                        text = stringResource(R.string.login_submit),
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
 
-                // Continuar con Apple (secundario)
+                // Continuar como invitado: entra sin guardar ningun perfil
                 OutlinedButton(
-                    onClick = onLoginSuccess,
+                    onClick = onGuestClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(54.dp),
@@ -209,14 +235,27 @@ fun LoginScreen(
 @Composable
 private fun LoginScreenPreview() {
     ChargeRouteTheme(darkTheme = false) {
-        LoginScreen(onLoginSuccess = {})
+        LoginScreen(
+            state = LoginUiState(name = PreviewData.userName, email = PreviewData.userEmail),
+            onNameChange = {},
+            onEmailChange = {},
+            onLoginClick = {},
+            onGuestClick = {}
+        )
     }
 }
 
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun LoginScreenDarkPreview() {
+    // En oscuro se muestra el formulario con los errores de validacion
     ChargeRouteTheme(darkTheme = true) {
-        LoginScreen(onLoginSuccess = {})
+        LoginScreen(
+            state = LoginUiState(nameError = true, emailError = true),
+            onNameChange = {},
+            onEmailChange = {},
+            onLoginClick = {},
+            onGuestClick = {}
+        )
     }
 }
