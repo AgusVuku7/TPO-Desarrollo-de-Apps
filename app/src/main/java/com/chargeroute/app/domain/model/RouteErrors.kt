@@ -1,9 +1,7 @@
 package com.chargeroute.app.domain.model
 
-// Errores al calcular una ruta nueva. El mensaje es el que ve el usuario (RNF06).
+// Errores al calcular una ruta nueva. No llevan texto: la pantalla elige el mensaje (RNF06).
 
-class NoConnectionException :
-    Exception("Sin conexión: no se puede calcular una ruta nueva.")
+class NoConnectionException : Exception()
 
-class RouteServiceException :
-    Exception("No se pudo consultar el servidor de rutas.")
+class RouteServiceException : Exception()

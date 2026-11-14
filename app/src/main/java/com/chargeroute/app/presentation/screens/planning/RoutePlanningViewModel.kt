@@ -17,6 +17,7 @@ import com.chargeroute.app.domain.usecase.GeocodeAddressUseCase
 import com.chargeroute.app.domain.usecase.SaveTripUseCase
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,12 +39,31 @@ data class RoutePlanningUiState(
     val acActive: Boolean = true,
     val isLoading: Boolean = false,
     val calculatedPlan: RoutePlan? = null,
-    val errorMessage: String? = null,
-    val infoNotice: String? = null,
+    val error: RoutePlanningError? = null,
+    // Lo que no se encontro, para el mensaje "No encontramos ..."
+    val notFoundText: String = "",
+    val infoNotice: RoutePlanningNotice? = null,
     val recentTrips: List<Trip> = emptyList(),
     val addressOptions: List<LocationPoint> = emptyList(),
     val optionsAreForOrigin: Boolean = true
 )
+
+// Que salio mal. El texto lo elige la pantalla (el ViewModel no tiene Context)
+enum class RoutePlanningError {
+    EMPTY_FIELDS, ADDRESS_NOT_FOUND, SEARCH_FAILED, NO_CONNECTION, ROUTE_SERVICE, UNKNOWN, SAVE_FAILED
+}
+
+// Avisos informativos. El texto tambien lo elige la pantalla
+enum class RoutePlanningNotice {
+    PERMISSION_DENIED, GPS_OBTAINED, GPS_OUTSIDE_ARGENTINA, GPS_UNAVAILABLE
+}
+
+// RNF06: que paso al calcular la ruta (la pantalla dice que puede hacer el usuario)
+internal fun routeErrorFor(error: Throwable): RoutePlanningError = when (error) {
+    is NoConnectionException -> RoutePlanningError.NO_CONNECTION
+    is RouteServiceException -> RoutePlanningError.ROUTE_SERVICE
+    else -> RoutePlanningError.UNKNOWN
+}
 
 // Eventos de una sola vez (no son estado): la pantalla los escucha para navegar
 sealed interface RoutePlanningEvent {
@@ -84,7 +104,7 @@ class RoutePlanningViewModel(
                 destination = trip.destination,
                 destinationInputText = trip.destination.name,
                 calculatedPlan = null,
-                errorMessage = null
+                error = null
             )
         }
         previewRoute()
@@ -106,7 +126,7 @@ class RoutePlanningViewModel(
     private fun pickResult(results: List<LocationPoint>, text: String, isOrigin: Boolean): LocationPoint? {
         if (results.isEmpty()) {
             _uiState.update {
-                it.copy(isLoading = false, errorMessage = "No encontramos \"$text\". Probá agregando la ciudad.")
+                it.copy(isLoading = false, error = RoutePlanningError.ADDRESS_NOT_FOUND, notFoundText = text)
             }
             return null
         }
@@ -138,7 +158,7 @@ class RoutePlanningViewModel(
     private suspend fun resolveOriginAndDestination(): Pair<LocationPoint, LocationPoint>? {
         val state = _uiState.value
         if (state.originInputText.isBlank() || state.destinationInputText.isBlank()) {
-            _uiState.update { it.copy(isLoading = false, errorMessage = "Ingresá origen y destino.") }
+            _uiState.update { it.copy(isLoading = false, error = RoutePlanningError.EMPTY_FIELDS) }
             return null
         }
 
@@ -162,7 +182,7 @@ class RoutePlanningViewModel(
             throw e
         } catch (_: Exception) {
             _uiState.update {
-                it.copy(isLoading = false, errorMessage = "No se pudo buscar la dirección. Revisá tu conexión.")
+                it.copy(isLoading = false, error = RoutePlanningError.SEARCH_FAILED)
             }
             return null
         }
@@ -175,9 +195,11 @@ class RoutePlanningViewModel(
         val vehicle = _uiState.value.vehicle ?: return
         val originText = _uiState.value.originInputText
         val destinationText = _uiState.value.destinationInputText
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _uiState.update { it.copy(isLoading = true, error = null) }
 
-        viewModelScope.launch {
+        // Se cancela la vista previa anterior: si dos terminan, la mas vieja no pisa a la nueva
+        previewJob?.cancel()
+        previewJob = viewModelScope.launch {
             val points = resolveOriginAndDestination() ?: return@launch
             val state = _uiState.value
             val result = calculateRouteUseCase(
@@ -194,13 +216,14 @@ class RoutePlanningViewModel(
                 it.copy(
                     isLoading = false,
                     calculatedPlan = if (stillValid) result.getOrNull() else null,
-                    errorMessage = result.exceptionOrNull()?.let { err -> routeErrorMessage(err) }
+                    error = result.exceptionOrNull()?.let { err -> routeErrorFor(err) }
                 )
             }
         }
     }
 
     private var defaultOriginTried = false
+    private var previewJob: Job? = null
 
     // Al abrir la pantalla (con permiso) intenta poner la ubicacion actual como origen.
     // Si no hay señal o no esta en Argentina, queda el origen de siempre.
@@ -285,9 +308,7 @@ class RoutePlanningViewModel(
     // Sin permiso de ubicacion se avisa y el origen se puede escribir a mano
     fun onLocationPermissionDenied() {
         _uiState.update {
-            it.copy(
-                infoNotice = "No diste permiso de ubicación. Escribí el origen a mano o activalo desde Ajustes."
-            )
+            it.copy(infoNotice = RoutePlanningNotice.PERMISSION_DENIED)
         }
     }
 
@@ -305,7 +326,7 @@ class RoutePlanningViewModel(
                             origin = point,
                             originInputText = point.name,
                             calculatedPlan = null,
-                            infoNotice = "Ubicación GPS obtenida con éxito."
+                            infoNotice = RoutePlanningNotice.GPS_OBTAINED
                         )
                     }
                 } else {
@@ -316,13 +337,13 @@ class RoutePlanningViewModel(
                             origin = KnownCities.OBELISCO,
                             originInputText = KnownCities.OBELISCO.name,
                             calculatedPlan = null,
-                            infoNotice = "Emulador detectado con GPS de EE.UU. Se fijó el origen en Buenos Aires (Obelisco) para calcular distancias viales reales en Argentina."
+                            infoNotice = RoutePlanningNotice.GPS_OUTSIDE_ARGENTINA
                         )
                     }
                 }
             } else {
                 _uiState.update {
-                    it.copy(infoNotice = "No se pudo obtener señal GPS. Usando ubicación predeterminada en Buenos Aires.")
+                    it.copy(infoNotice = RoutePlanningNotice.GPS_UNAVAILABLE)
                 }
             }
         }
@@ -332,7 +353,9 @@ class RoutePlanningViewModel(
         val currentState = _uiState.value
         val vehicle = currentState.vehicle ?: return
 
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        // El calculo definitivo manda: si hay una vista previa en curso, se cancela
+        previewJob?.cancel()
+        _uiState.update { it.copy(isLoading = true, error = null) }
 
         viewModelScope.launch {
             // Primero se buscan las direcciones que escribio el usuario
@@ -361,13 +384,21 @@ class RoutePlanningViewModel(
                     routePlan = plan
                 )
                 // Persistencia inmediata en Room (Offline-First)
-                saveTripUseCase(trip)
+                try {
+                    saveTripUseCase(trip)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Si Room falla no se navega y el boton vuelve a quedar habilitado
+                    _uiState.update { it.copy(isLoading = false, error = RoutePlanningError.SAVE_FAILED) }
+                    return@launch
+                }
 
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         calculatedPlan = plan,
-                        errorMessage = null
+                        error = null
                     )
                 }
                 loadRecentTrips()
@@ -377,20 +408,11 @@ class RoutePlanningViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = routeErrorMessage(err)
+                        error = routeErrorFor(err)
                     )
                 }
             }
         }
-    }
-
-    // RNF06: mensaje claro de que paso y que puede hacer el usuario
-    private fun routeErrorMessage(error: Throwable): String {
-        val reason = when (error) {
-            is NoConnectionException, is RouteServiceException -> error.message
-            else -> "No se pudo calcular la ruta."
-        }
-        return "$reason Podés reintentar o abrir una ruta guardada."
     }
 
     companion object {
