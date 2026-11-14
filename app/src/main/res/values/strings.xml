@@ -149,14 +149,15 @@
     <string name="arrival_illustrative">Resumen de un viaje ilustrativo.</string>
     <string name="arrival_reached">Llegaste a destino</string>
     <string name="arrival_greeting">¡Hola, %1$s!</string>
-    <string name="arrival_subtitle">%1$s • Una carga, todo el camino resuelto.</string>
+    <string name="arrival_subtitle">%1$s • Todo el camino resuelto.</string>
     <string name="arrival_distance_value">%1$d km</string>
     <string name="arrival_traveled">Recorridos</string>
     <string name="arrival_total_time">Tiempo total</string>
     <string name="arrival_charge_stop">Parada de carga</string>
+    <string name="arrival_charge_stops">Paradas de carga</string>
     <string name="arrival_trip_breakdown">%1$s de manejo • %2$s de carga • %3$s kWh usados</string>
     <string name="arrival_battery_remaining">Batería restante</string>
-    <string name="arrival_battery_detail">14 kWh • aprox. 90 km disponibles</string>
+    <string name="arrival_battery_detail">%1$s kWh • aprox. %2$d km disponibles</string>
     <string name="arrival_battery_percent">%1$d%%</string>
     <!-- Detalle de la estacion -->
     <string name="station_header">PARADA DEL VIAJE</string>

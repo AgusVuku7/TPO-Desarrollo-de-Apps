@@ -51,8 +51,10 @@ import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.core.theme.RouteBlue
+import com.chargeroute.app.domain.model.RangeEstimator
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Trip
+import com.chargeroute.app.domain.model.TripEnergy
 import com.chargeroute.app.presentation.components.formatDuration
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
 import com.chargeroute.app.presentation.preview.PreviewData
@@ -66,8 +68,6 @@ fun ArrivalScreen(
     onViewSummaryClick: () -> Unit,
     onCloseClick: () -> Unit
 ) {
-    val plan = trip?.routePlan
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -108,35 +108,49 @@ fun ArrivalScreen(
             // Tarjeta principal de llegada
             ArrivalHeroCard()
 
-            Spacer(modifier = Modifier.height(20.dp))
+            // Sin viaje no se muestran los datos del viaje
+            if (trip != null) {
+                val plan = trip.routePlan
+                val percent = plan.arrivalBatteryPercent
 
-            Text(
-                text = stringResource(
-                    R.string.arrival_greeting,
-                    trip?.destination?.name?.split(",")?.firstOrNull() ?: "Mar del Plata"
-                ),
-                style = MaterialTheme.typography.displayLarge.copy(fontSize = 28.sp),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(
-                    R.string.arrival_subtitle,
-                    trip?.destination?.address ?: "Plaza Colón"
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                Spacer(modifier = Modifier.height(20.dp))
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = stringResource(
+                        R.string.arrival_greeting,
+                        trip.destination.name.split(",").first()
+                    ),
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 28.sp),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        R.string.arrival_subtitle,
+                        trip.destination.address
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-            // Tarjeta con los resultados del viaje
-            TripResultsCard(plan = plan)
+                Spacer(modifier = Modifier.height(20.dp))
 
-            Spacer(modifier = Modifier.height(14.dp))
+                // Tarjeta con los resultados del viaje
+                TripResultsCard(plan = plan)
 
-            // Tarjeta de bateria restante
-            BatteryRemainingCard(batteryRemaining = plan?.arrivalBatteryPercent ?: 22)
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Tarjeta de bateria restante
+                BatteryRemainingCard(
+                    batteryRemaining = percent,
+                    remainingKwh = TripEnergy.remainingKwh(percent, trip.vehicle.usableBatteryKwh),
+                    rangeKm = RangeEstimator.rangeKm(
+                        percent,
+                        trip.vehicle.usableBatteryKwh,
+                        plan.consumptionKwhPer100Km
+                    ).toInt()
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -266,7 +280,7 @@ private fun ArrivalHeroCard() {
 
 // Tarjeta con distancia, tiempo, paradas y energia usada
 @Composable
-private fun TripResultsCard(plan: RoutePlan?) {
+private fun TripResultsCard(plan: RoutePlan) {
     TouchAccessibleCard(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -277,7 +291,7 @@ private fun TripResultsCard(plan: RoutePlan?) {
             ) {
                 Column {
                     Text(
-                        text = stringResource(R.string.arrival_distance_value, plan?.distanceKm?.toInt() ?: 414),
+                        text = stringResource(R.string.arrival_distance_value, plan.distanceKm.toInt()),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -289,7 +303,7 @@ private fun TripResultsCard(plan: RoutePlan?) {
                 }
                 Column {
                     Text(
-                        text = formatDuration(plan?.totalDurationMinutes ?: 0),
+                        text = formatDuration(plan.totalDurationMinutes),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -302,12 +316,16 @@ private fun TripResultsCard(plan: RoutePlan?) {
 
                 Column {
                     Text(
-                        text = "${plan?.stops?.size ?: 1}",
+                        text = "${plan.stops.size}",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = stringResource(R.string.arrival_charge_stop),
+                        text = if (plan.stops.size == 1) {
+                            stringResource(R.string.arrival_charge_stop)
+                        } else {
+                            stringResource(R.string.arrival_charge_stops)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -317,13 +335,12 @@ private fun TripResultsCard(plan: RoutePlan?) {
             Spacer(modifier = Modifier.height(14.dp))
 
             // Energia usada = distancia x consumo del viaje
-
-            val usedKwh = plan?.let { it.distanceKm * it.consumptionKwhPer100Km / 100.0 } ?: 0.0
+            val usedKwh = TripEnergy.usedKwh(plan.distanceKm, plan.consumptionKwhPer100Km)
             Text(
                 text = stringResource(
                     R.string.arrival_trip_breakdown,
-                    formatDuration(plan?.driveDurationMinutes ?: 0),
-                    formatDuration(plan?.chargeDurationMinutes ?: 0),
+                    formatDuration(plan.driveDurationMinutes),
+                    formatDuration(plan.chargeDurationMinutes),
                     String.format(Locale.US, "%.1f", usedKwh)
                 ),
                 style = MaterialTheme.typography.bodySmall,
@@ -335,7 +352,7 @@ private fun TripResultsCard(plan: RoutePlan?) {
 
 // Tarjeta con el porcentaje de bateria que queda al llegar
 @Composable
-private fun BatteryRemainingCard(batteryRemaining: Int) {
+private fun BatteryRemainingCard(batteryRemaining: Int, remainingKwh: Double, rangeKm: Int) {
     TouchAccessibleCard(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -352,7 +369,11 @@ private fun BatteryRemainingCard(batteryRemaining: Int) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = stringResource(R.string.arrival_battery_detail),
+                        text = stringResource(
+                            R.string.arrival_battery_detail,
+                            String.format(Locale.US, "%.1f", remainingKwh),
+                            rangeKm
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
