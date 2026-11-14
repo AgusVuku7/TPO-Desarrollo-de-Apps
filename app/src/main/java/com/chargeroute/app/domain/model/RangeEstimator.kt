@@ -1,5 +1,7 @@
 package com.chargeroute.app.domain.model
 
+import kotlin.math.floor
+
 // Resultado de RF03: si con la bateria actual se llega al proximo objetivo
 data class ReachEstimate(
     val targetName: String,        // proxima parada o destino
@@ -41,7 +43,8 @@ object RangeEstimator {
         return ReachEstimate(
             targetName = targetName,
             kmToTarget = kmToTarget.toInt(),
-            arrivalBatteryPercent = (batteryPercent - percentNeeded).toInt(),
+            // floor y no toInt(): toInt() corta hacia cero y -0,4 pasaba a 0 (parecia que se llegaba)
+            arrivalBatteryPercent = floor(batteryPercent - percentNeeded).toInt(),
             rangeKm = rangeKm(batteryPercent, usableBatteryKwh, consumptionKwhPer100Km).toInt()
         )
     }
