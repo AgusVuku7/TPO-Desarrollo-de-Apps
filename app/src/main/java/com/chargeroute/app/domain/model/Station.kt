@@ -8,11 +8,11 @@ data class Station(
     val latitude: Double,
     val longitude: Double,
     val connectors: List<Connector>,
-    val availableCount: Int = 2,
-    val totalCount: Int = 4,
-    val amenities: List<String> = listOf("24 h", "Café", "Baños", "Wi-Fi"),
-    val operator: String = "YPF Punto Eléctrico",
-    val notes: String = "Sin reserva previa. Confirmá tarifa y acceso antes de viajar.",
+    val availableCount: Int = 0,
+    val totalCount: Int = 0,
+    val amenities: List<String> = emptyList(),
+    val operator: String = "",
+    val notes: String = "",
     val lastUpdatedMillis: Long = System.currentTimeMillis()
 ) {
     fun isCompatibleWith(vehicleConnectors: List<ConnectorType>): Boolean {

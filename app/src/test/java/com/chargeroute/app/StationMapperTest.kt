@@ -1,5 +1,6 @@
 package com.chargeroute.app
 
+import com.chargeroute.app.data.local.entity.StationEntity
 import com.chargeroute.app.data.mapper.StationMapper
 import com.chargeroute.app.data.remote.dto.OcmAddressInfo
 import com.chargeroute.app.data.remote.dto.OcmConnection
@@ -74,5 +75,26 @@ class StationMapperTest {
         assertEquals(60.0, station.connectors.first().powerKw, 0.0)
         assertEquals(0, station.availableCount)
         assertEquals(emptyList<String>(), station.amenities)
+    }
+
+    @Test
+    fun invalidAmenitiesJsonGivesEmptyList() {
+        val entity = StationEntity(
+            id = "ocm_1",
+            remoteId = "1",
+            name = "Estación Test",
+            address = "Ruta 2 km 100",
+            latitude = -35.5,
+            longitude = -58.0,
+            connectorsJson = "[]",
+            availableCount = 0,
+            totalCount = 2,
+            amenitiesJson = "esto no es json",
+            operator = "",
+            notes = "",
+            lastUpdatedMillis = 0L
+        )
+
+        assertEquals(emptyList<String>(), StationMapper.fromEntity(entity).amenities)
     }
 }

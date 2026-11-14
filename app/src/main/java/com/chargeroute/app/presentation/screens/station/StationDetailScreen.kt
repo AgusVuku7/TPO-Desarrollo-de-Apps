@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Navigation
@@ -36,9 +35,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,13 +69,14 @@ fun StationDetailScreen(
     onNavigateToCharger: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    if (stop == null) {
-        onBackClick()
-        return
+    // La navegacion es un efecto: va en LaunchedEffect y no en el cuerpo del composable
+    LaunchedEffect(stop) {
+        if (stop == null) onBackClick()
     }
+    if (stop == null) return
 
     val station = stop.station
-    var simulatedBatteryAfterCharge by remember { mutableIntStateOf(stop.departureBatteryPercent) }
+    var simulatedBatteryAfterCharge by rememberSaveable(stop.id) { mutableIntStateOf(stop.departureBatteryPercent) }
 
     Scaffold(
         topBar = {
@@ -215,13 +216,6 @@ private fun StationInfoCard(station: Station, vehicle: Vehicle?) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = {}) {
-                    Icon(
-                        imageVector = Icons.Default.BookmarkBorder,
-                        contentDescription = stringResource(R.string.station_save),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -295,16 +289,18 @@ private fun StationInfoCard(station: Station, vehicle: Vehicle?) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = stringResource(
-                    R.string.station_vehicle_max_power,
-                    vehicle?.model ?: stringResource(R.string.station_vehicle_default),
-                    vehicle?.maxDcKw?.toInt() ?: 77
-                ),
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (vehicle != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(
+                        R.string.station_vehicle_max_power,
+                        vehicle.model,
+                        vehicle.maxDcKw.toInt()
+                    ),
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

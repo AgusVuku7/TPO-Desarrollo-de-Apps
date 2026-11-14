@@ -22,9 +22,9 @@ object StationMapper {
 
         val amenitiesType = object : TypeToken<List<String>>() {}.type
         val amenities: List<String> = try {
-            gson.fromJson(entity.amenitiesJson, amenitiesType) ?: listOf("24 h", "Café", "Baños")
+            gson.fromJson(entity.amenitiesJson, amenitiesType) ?: emptyList()
         } catch (_: Exception) {
-            listOf("24 h", "Café", "Baños")
+            emptyList()
         }
 
         val domainConnectors = connectorDtos.map { dto ->

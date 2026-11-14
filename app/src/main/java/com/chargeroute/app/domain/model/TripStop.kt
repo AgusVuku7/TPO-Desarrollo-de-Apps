@@ -8,6 +8,6 @@ data class TripStop(
     val arrivalBatteryPercent: Int,
     val departureBatteryPercent: Int,
     val chargedEnergyKwh: Double,
-    val arrivalTime: String = "12:13",
-    val departureTime: String = "12:48"
+    val arrivalTime: String = "",
+    val departureTime: String = ""
 )
