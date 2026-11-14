@@ -15,7 +15,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.chargeroute.app.core.sensor.LightThemeHysteresis
 import com.chargeroute.app.core.theme.ChargeRouteTheme
-import com.chargeroute.app.core.theme.ThemeMode
+import com.chargeroute.app.domain.model.ThemeMode
 import com.chargeroute.app.presentation.ThemeViewModel
 import com.chargeroute.app.presentation.navigation.AppNavHost
 import kotlinx.coroutines.flow.collectLatest
@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
     private val container by lazy { (application as ChargeRouteApp).container }
 
     private val themeViewModel: ThemeViewModel by viewModels {
-        viewModelFactory { initializer { ThemeViewModel(container.userPreferences) } }
+        viewModelFactory { initializer { ThemeViewModel(container.userRepository) } }
     }
 
     private var isSensorDarkTheme by mutableStateOf(false)

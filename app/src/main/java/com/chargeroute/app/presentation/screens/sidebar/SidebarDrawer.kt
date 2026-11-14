@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.core.theme.ChargeRouteTheme
-import com.chargeroute.app.core.theme.ThemeMode
+import com.chargeroute.app.domain.model.ThemeMode
 import com.chargeroute.app.presentation.navigation.Screen
 import com.chargeroute.app.presentation.preview.PreviewData
 

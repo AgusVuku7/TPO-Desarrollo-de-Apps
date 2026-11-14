@@ -2,7 +2,7 @@ package com.chargeroute.app.presentation.screens.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chargeroute.app.data.local.datastore.UserPreferencesDataStore
+import com.chargeroute.app.domain.repository.UserRepository
 import com.chargeroute.app.domain.model.ProfileValidator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,10 +23,10 @@ data class LoginUiState(
 
 /**
  * Login simulado: no hay servidor ni contraseña. Valida el formulario y guarda
- * el perfil (nombre y mail) en DataStore.
+ * el perfil (nombre y mail) en el repositorio de usuario.
  */
 class LoginViewModel(
-    private val userPreferences: UserPreferencesDataStore
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -57,7 +57,7 @@ class LoginViewModel(
 
         // Primero se guarda y recien despues se avisa, para no navegar con el perfil a medio guardar
         viewModelScope.launch {
-            userPreferences.login(name, email)
+            userRepository.login(name, email)
             _loginDone.emit(Unit)
         }
     }

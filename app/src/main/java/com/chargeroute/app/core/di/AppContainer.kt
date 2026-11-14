@@ -11,10 +11,12 @@ import com.chargeroute.app.data.remote.RetrofitClient
 import com.chargeroute.app.data.repository.RouteRepositoryImpl
 import com.chargeroute.app.data.repository.StationRepositoryImpl
 import com.chargeroute.app.data.repository.TripRepositoryImpl
+import com.chargeroute.app.data.repository.UserRepositoryImpl
 import com.chargeroute.app.data.repository.VehicleRepositoryImpl
 import com.chargeroute.app.domain.repository.RouteRepository
 import com.chargeroute.app.domain.repository.StationRepository
 import com.chargeroute.app.domain.repository.TripRepository
+import com.chargeroute.app.domain.repository.UserRepository
 import com.chargeroute.app.domain.repository.VehicleRepository
 import com.chargeroute.app.domain.usecase.CalculateRouteUseCase
 import com.chargeroute.app.domain.usecase.GeocodeAddressUseCase
@@ -25,7 +27,6 @@ import com.chargeroute.app.domain.usecase.UpdateBatteryUseCase
 
 interface AppContainer {
     val database: ChargeRouteDatabase
-    val userPreferences: UserPreferencesDataStore
     val networkObserver: NetworkConnectivityObserver
     val lightSensorManager: AmbientLightSensorManager
     val locationClient: LocationClient
@@ -34,6 +35,7 @@ interface AppContainer {
     val stationRepository: StationRepository
     val routeRepository: RouteRepository
     val tripRepository: TripRepository
+    val userRepository: UserRepository
 
     val calculateRouteUseCase: CalculateRouteUseCase
     val updateBatteryUseCase: UpdateBatteryUseCase
@@ -49,7 +51,7 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
         ChargeRouteDatabase.getInstance(context)
     }
 
-    override val userPreferences: UserPreferencesDataStore by lazy {
+    private val userPreferences: UserPreferencesDataStore by lazy {
         UserPreferencesDataStore(context)
     }
 
@@ -84,6 +86,10 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val tripRepository: TripRepository by lazy {
         TripRepositoryImpl(database, vehicleRepository, stationRepository)
+    }
+
+    override val userRepository: UserRepository by lazy {
+        UserRepositoryImpl(userPreferences)
     }
 
     override val calculateRouteUseCase: CalculateRouteUseCase by lazy {
