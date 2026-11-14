@@ -9,6 +9,7 @@ import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.domain.usecase.UpdateBatteryUseCase
+import com.chargeroute.app.presentation.screens.navigation.ActiveNavigationUiState
 import com.chargeroute.app.presentation.screens.navigation.ActiveNavigationViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,7 +50,11 @@ class FakeTripRepository(
         }
     }
 
+    // Cuantas veces se marco un viaje como completado
+    var markCompletedCalls = 0
+
     override suspend fun markTripCompleted(tripId: String) {
+        markCompletedCalls++
         tripsFlow.update { map ->
             val trip = map[tripId] ?: return@update map
             map + (tripId to trip.copy(isCompleted = true))
@@ -330,6 +335,37 @@ class ActiveNavigationBatteryTest {
         val atDestination = viewModel.uiState.value
         assertTrue(atDestination.isArrived)
         assertFalse(atDestination.isCharging)
+    }
+
+    @Test
+    fun simulation_marksTripCompletedOnlyOnce_whenArriving() = runTest(testDispatcher) {
+        fakeRepository.saveTrip(createSampleTrip(id = "trip_once"))
+        viewModel.loadTrip("trip_once")
+        advanceUntilIdle()
+
+        // Primer "Simular viaje": frena en el cargador
+        viewModel.toggleSimulation()
+        advanceUntilIdle()
+        // Segundo: sigue hasta el destino
+        viewModel.toggleSimulation()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isArrived)
+        assertEquals("Al llegar el viaje se marca completado una sola vez", 1, fakeRepository.markCompletedCalls)
+    }
+
+    @Test
+    fun minutesLeft_isHalfOfDriveMinutes_atHalfTheTrip() = runTest(testDispatcher) {
+        fakeRepository.saveTrip(createSampleTrip(id = "trip_minutes"))
+        viewModel.loadTrip("trip_minutes")
+        advanceUntilIdle()
+
+        assertEquals(275, viewModel.uiState.value.minutesLeft)
+
+        // driveDurationMinutes = 275, a mitad de viaje quedan 137 (se redondea para abajo)
+        val half = viewModel.uiState.value.copy(progress = 0.5f)
+        assertEquals(137, half.minutesLeft)
+        assertEquals(0, ActiveNavigationUiState().minutesLeft)
     }
 
     @Test

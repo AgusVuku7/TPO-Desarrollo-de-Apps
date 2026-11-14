@@ -155,7 +155,7 @@ fun ActiveNavigationScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = notice,
+                            text = gpsNoticeText(notice, state.offRouteKm),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(12.dp)
@@ -221,12 +221,38 @@ private fun ManeuverBanner(
                     color = Color.White
                 )
                 Text(
-                    text = state.currentManeuver,
+                    text = instructionText(state),
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.White
                 )
             }
         }
+    }
+}
+
+// Texto del aviso del GPS (el ViewModel solo dice cual es)
+@Composable
+private fun gpsNoticeText(notice: GpsNotice, offRouteKm: Int): String {
+    return when (notice) {
+        GpsNotice.SEARCHING -> stringResource(R.string.nav_gps_searching)
+        GpsNotice.NO_PERMISSION -> stringResource(R.string.nav_gps_no_permission)
+        GpsNotice.OFF_ROUTE -> stringResource(R.string.nav_gps_off_route, offRouteKm)
+    }
+}
+
+// Indicacion del cartel: segun el estado se arma la frase (la indicacion del paso viene del servicio de rutas)
+@Composable
+private fun instructionText(state: ActiveNavigationUiState): String {
+    return when {
+        state.isArrived -> stringResource(R.string.nav_arrived)
+        state.isCharging -> stringResource(R.string.nav_charging_at, state.nextStop?.station?.name.orEmpty())
+        state.stepInstruction != null -> state.stepInstruction
+        else -> stringResource(
+            R.string.nav_follow_route_to,
+            state.nextStop?.station?.name
+                ?: state.trip?.destination?.name
+                ?: stringResource(R.string.nav_destination_default)
+        )
     }
 }
 
@@ -388,8 +414,6 @@ private fun TripInfoPanel(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            val driveMinutes = state.trip?.routePlan?.driveDurationMinutes ?: 0
-            val minutesLeft = (driveMinutes * (1f - state.progress)).toInt()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -397,7 +421,7 @@ private fun TripInfoPanel(
             ) {
                 Column {
                     Text(
-                        text = formatDuration(minutesLeft),
+                        text = formatDuration(state.minutesLeft),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -553,7 +577,7 @@ private val PreviewState = ActiveNavigationUiState(
     currentSpeedKmH = 95,
     distanceToNextStopKm = 80,
     distanceRemainingTotalKm = 290,
-    currentManeuver = "Seguí por Autovía 2",
+    stepInstruction = "Seguí por Autovía 2",
     maneuverDistance = "2.4 km"
 )
 
