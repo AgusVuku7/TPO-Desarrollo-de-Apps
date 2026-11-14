@@ -19,8 +19,6 @@ data class RoutePlan(
     val calculatedAtMillis: Long = System.currentTimeMillis(),
     val departureTime: String = "",
     val arrivalTime: String = "",
-    val isLowBatteryWarning: Boolean = false,
-    val warningMessage: String? = null,
     // Distancia del camino directo, sin pasar por los cargadores (0 = sin dato)
     val directDistanceKm: Double = 0.0
 ) {

@@ -259,7 +259,7 @@ private fun SummaryBottomBar(
                 text = stringResource(
                     R.string.summary_illustrative_plan,
                     plan?.departureTime ?: "--:--",
-                    String.format(Locale.US, "%.1f", plan?.consumptionKwhPer100Km ?: 15.5)
+                    plan?.let { String.format(Locale.US, "%.1f", it.consumptionKwhPer100Km) } ?: "--.-"
                 ),
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

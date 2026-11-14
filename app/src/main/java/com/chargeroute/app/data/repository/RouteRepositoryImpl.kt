@@ -6,13 +6,14 @@ import com.chargeroute.app.data.mapper.RouteMapper
 import com.chargeroute.app.data.remote.RetrofitClient
 import com.chargeroute.app.data.remote.dto.OsrmRoute
 import com.chargeroute.app.data.remote.dto.OsrmStep
-import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.ChargingPlanner
+import com.chargeroute.app.domain.model.Consumption
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.NavStep
 import com.chargeroute.app.domain.model.NoConnectionException
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.RouteServiceException
+import com.chargeroute.app.domain.model.StopSchedule
 import com.chargeroute.app.domain.model.TripClock
 import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.domain.model.Vehicle
@@ -67,8 +68,7 @@ class RouteRepositoryImpl(
             val stationsAlongRoute = stationRepository.getStationsAlongRoute(polylinePoints, vehicle.supportedConnectors)
 
             // Consumo: Base + penalidad del 10% si el aire acondicionado está encendido
-            val acMultiplier = if (acActive) 1.10 else 1.00
-            val consumptionKwhPer100Km = vehicle.baseConsumptionKwhPer100Km * acMultiplier
+            val consumptionKwhPer100Km = Consumption.effectiveKwhPer100Km(vehicle.baseConsumptionKwhPer100Km, acActive)
 
             // 1) Se planifican las paradas sobre la ruta directa (regla de negocio en el dominio)
             var chargingPlan = ChargingPlanner.plan(
@@ -114,11 +114,14 @@ class RouteRepositoryImpl(
             // La salida se toma como el momento en que se calcula la ruta.
             val now = System.currentTimeMillis()
             fun clock(minutes: Int) = TripClock.at(now, minutes)
-            var previousChargeMinutes = 0
+            val minutesToStops = StopSchedule.minutesToEachStop(
+                stopKms = chargingPlan.stops.map { it.km },
+                chargeMinutes = chargingPlan.stops.map { it.chargeMinutes },
+                routeKm = distanceKm,
+                driveMinutes = driveDurationMinutes
+            )
             val stops = chargingPlan.stops.mapIndexed { index, planned ->
-                val driveMinutes = if (distanceKm > 0) ((planned.km / distanceKm) * driveDurationMinutes).toInt() else 0
-                val minutesToStop = driveMinutes + previousChargeMinutes
-                previousChargeMinutes += planned.chargeMinutes
+                val minutesToStop = minutesToStops[index]
                 TripStop(
                     id = "stop_${index + 1}_$now",
                     station = planned.station,
@@ -135,14 +138,6 @@ class RouteRepositoryImpl(
             val chargeDurationMinutes = chargingPlan.stops.sumOf { it.chargeMinutes }
             val finalArrivalBatteryPercent = chargingPlan.arrivalBatteryPercent
             val totalDurationMinutes = driveDurationMinutes + chargeDurationMinutes
-
-            val warning = when {
-                !chargingPlan.reachesDestination ->
-                    "Con las estaciones encontradas no alcanza la batería para llegar al destino. Revisá la carga inicial o el recorrido."
-                finalArrivalBatteryPercent < BatteryLevels.LOW_PERCENT ->
-                    "Batería estimada al arribar: $finalArrivalBatteryPercent%. Recomendamos mantener la carga programada."
-                else -> null
-            }
 
             val routePlan = RoutePlan(
                 origin = origin,
@@ -161,9 +156,7 @@ class RouteRepositoryImpl(
                 calculatedAtMillis = now,
                 directDistanceKm = directDistanceKm,
                 departureTime = clock(0),
-                arrivalTime = clock(totalDurationMinutes),
-                isLowBatteryWarning = warning != null,
-                warningMessage = warning
+                arrivalTime = clock(totalDurationMinutes)
             )
 
             Result.success(routePlan)
