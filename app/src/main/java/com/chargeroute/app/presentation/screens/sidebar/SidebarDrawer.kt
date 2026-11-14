@@ -49,13 +49,15 @@ import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.core.theme.ThemeMode
+import com.chargeroute.app.presentation.navigation.Screen
 import com.chargeroute.app.presentation.preview.PreviewData
 
 @Composable
 fun SidebarDrawer(
     userName: String,
     userEmail: String,
-    savedTripsCount: Int = 1,
+    savedTripsCount: Int,
+    currentRoute: String?,
     currentThemeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
     onNavigateToPlan: () -> Unit,
@@ -90,6 +92,7 @@ fun SidebarDrawer(
 
                 DrawerMenuItems(
                     savedTripsCount = savedTripsCount,
+                    currentRoute = currentRoute,
                     onNavigateToPlan = onNavigateToPlan,
                     onNavigateToSavedTrips = onNavigateToSavedTrips,
                     onNavigateToChargers = onNavigateToChargers,
@@ -196,6 +199,7 @@ private fun ProfileCard(userName: String, userEmail: String) {
 @Composable
 private fun DrawerMenuItems(
     savedTripsCount: Int,
+    currentRoute: String?,
     onNavigateToPlan: () -> Unit,
     onNavigateToSavedTrips: () -> Unit,
     onNavigateToChargers: () -> Unit,
@@ -204,7 +208,7 @@ private fun DrawerMenuItems(
     DrawerItem(
         icon = Icons.Default.Route,
         title = stringResource(R.string.sidebar_plan_trip),
-        isSelected = true,
+        isSelected = currentRoute == Screen.CarSetup.route,
         onClick = {
             onClose()
             onNavigateToPlan()
@@ -215,6 +219,7 @@ private fun DrawerMenuItems(
         icon = Icons.Default.History,
         title = stringResource(R.string.sidebar_my_trips),
         badge = "$savedTripsCount",
+        isSelected = currentRoute == Screen.SavedTrips.route,
         onClick = {
             onClose()
             onNavigateToSavedTrips()
@@ -224,6 +229,7 @@ private fun DrawerMenuItems(
     DrawerItem(
         icon = Icons.Default.EvStation,
         title = stringResource(R.string.sidebar_my_chargers),
+        isSelected = currentRoute == Screen.UsedChargers.route,
         onClick = {
             onClose()
             onNavigateToChargers()
@@ -321,7 +327,6 @@ private fun DrawerBottom(
 private fun DrawerItem(
     icon: ImageVector,
     title: String,
-    subtitle: String? = null,
     badge: String? = null,
     isSelected: Boolean = false,
     onClick: () -> Unit
@@ -355,13 +360,6 @@ private fun DrawerItem(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) BrandPrimary else MaterialTheme.colorScheme.onSurface
                 )
-                subtitle?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
             badge?.let {
                 Box(
@@ -423,6 +421,7 @@ private fun SidebarDrawerPreview() {
             userName = PreviewData.userName,
             userEmail = PreviewData.userEmail,
             savedTripsCount = 2,
+            currentRoute = Screen.CarSetup.route,
             currentThemeMode = ThemeMode.LIGHT,
             onThemeModeChange = {},
             onNavigateToPlan = {},
@@ -442,6 +441,7 @@ private fun SidebarDrawerDarkPreview() {
             userName = PreviewData.userName,
             userEmail = PreviewData.userEmail,
             savedTripsCount = 2,
+            currentRoute = Screen.CarSetup.route,
             currentThemeMode = ThemeMode.DARK,
             onThemeModeChange = {},
             onNavigateToPlan = {},
