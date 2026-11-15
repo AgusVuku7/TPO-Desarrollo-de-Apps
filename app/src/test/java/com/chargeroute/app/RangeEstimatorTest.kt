@@ -50,6 +50,24 @@ class RangeEstimatorTest {
     }
 
     @Test
+    fun doesNotReachWhenMissingLessThanOnePercent() {
+        // 101 km necesitan 40,4 %: con 40 % falta un poco, no tiene que dar 0
+        val estimate = RangeEstimator.estimate("X", 101.0, 40, 50.0, 20.0)
+
+        assertFalse(estimate.reaches)
+        assertEquals(-1, estimate.arrivalBatteryPercent)
+    }
+
+    @Test
+    fun reachesWithExactlyZeroLeft() {
+        // 100 km necesitan justo 40 %: con 40 % llega con 0 %
+        val estimate = RangeEstimator.estimate("X", 100.0, 40, 50.0, 20.0)
+
+        assertTrue(estimate.reaches)
+        assertEquals(0, estimate.arrivalBatteryPercent)
+    }
+
+    @Test
     fun tripClockAddsMinutesToDeparture() {
         val zone = ZoneId.of("America/Argentina/Buenos_Aires")
         val departure = LocalDateTime.of(2026, 11, 8, 10, 20).atZone(zone).toInstant().toEpochMilli()
