@@ -1,7 +1,6 @@
 package com.chargeroute.app.data.repository
 
 import com.chargeroute.app.core.network.NetworkConnectivityObserver
-import com.chargeroute.app.data.local.ChargeRouteDatabase
 import com.chargeroute.app.data.mapper.RouteMapper
 import com.chargeroute.app.data.remote.RetrofitClient
 import com.chargeroute.app.data.remote.dto.OsrmRoute
@@ -25,7 +24,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
 class RouteRepositoryImpl(
-    private val database: ChargeRouteDatabase,
     private val networkConnectivityObserver: NetworkConnectivityObserver,
     private val stationRepository: StationRepository
 ) : RouteRepository {

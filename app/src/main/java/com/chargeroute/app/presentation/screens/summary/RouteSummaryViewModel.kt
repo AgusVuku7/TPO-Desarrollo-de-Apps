@@ -13,8 +13,7 @@ import kotlinx.coroutines.launch
 
 data class RouteSummaryUiState(
     val trip: Trip? = null,
-    val isLoading: Boolean = false,
-    val isOffline: Boolean = false
+    val isLoading: Boolean = false
 )
 
 class RouteSummaryViewModel(

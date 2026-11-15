@@ -34,7 +34,7 @@ fun BatteryLevelBadge(
     showIcon: Boolean = true
 ) {
     val color = when {
-        percent > 40 -> BatteryGreen
+        percent > BatteryLevels.GOOD_ABOVE_PERCENT -> BatteryGreen
         percent >= BatteryLevels.LOW_PERCENT -> BatteryOrange
         else -> BatteryRed
     }

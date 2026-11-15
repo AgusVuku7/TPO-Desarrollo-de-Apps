@@ -55,6 +55,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +73,7 @@ import com.chargeroute.app.core.theme.BatteryGreen
 import com.chargeroute.app.core.theme.BatteryOrange
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.core.theme.ChargeRouteTheme
+import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.presentation.components.StepProgressIndicator
 import com.chargeroute.app.presentation.components.TouchAccessibleCard
@@ -579,7 +581,7 @@ private fun BatteryCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
             ) {
                 FilledIconButton(
-                    onClick = { onBatteryChanged(state.initialBatteryPercent - 5) },
+                    onClick = { onBatteryChanged(state.initialBatteryPercent - BatteryLevels.STEP_PERCENT) },
                     modifier = Modifier.size(44.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -591,7 +593,7 @@ private fun BatteryCard(
                     )
                 }
 
-                var textInput by remember(state.initialBatteryPercent) {
+                var textInput by rememberSaveable(state.initialBatteryPercent) {
                     mutableStateOf(state.initialBatteryPercent.toString())
                 }
 
@@ -601,9 +603,9 @@ private fun BatteryCard(
                         val digitsOnly = newVal.filter { it.isDigit() }.take(3)
                         val parsed = digitsOnly.toIntOrNull()
                         // Nunca se puede escribir mas de 100%
-                        textInput = if (parsed != null && parsed > 100) "100" else digitsOnly
+                        textInput = if (parsed != null && parsed > BatteryLevels.MAX_PERCENT) BatteryLevels.MAX_PERCENT.toString() else digitsOnly
                         if (parsed != null) {
-                            onBatteryChanged(parsed.coerceIn(5, 100))
+                            onBatteryChanged(parsed.coerceIn(BatteryLevels.MIN_PERCENT, BatteryLevels.MAX_PERCENT))
                         }
                     },
                     modifier = Modifier.width(74.dp),
@@ -632,7 +634,7 @@ private fun BatteryCard(
                 )
 
                 FilledIconButton(
-                    onClick = { onBatteryChanged(state.initialBatteryPercent + 5) },
+                    onClick = { onBatteryChanged(state.initialBatteryPercent + BatteryLevels.STEP_PERCENT) },
                     modifier = Modifier.size(44.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant

@@ -66,7 +66,7 @@ class CarSetupViewModel(
     }
 
     fun updateBatteryPercent(percent: Int) {
-        _uiState.update { it.copy(initialBatteryPercent = percent.coerceIn(5, 100)) }
+        _uiState.update { it.copy(initialBatteryPercent = percent.coerceIn(BatteryLevels.MIN_PERCENT, BatteryLevels.MAX_PERCENT)) }
     }
 
     fun toggleAc(active: Boolean) {

@@ -48,7 +48,7 @@ class RouteGeometryTest {
 
     @Test
     fun encodedPolylineComesBackTheSame() {
-        val encoded = RouteMapper.encodePolyline(route)
+        val encoded = encodePolyline(route)
         val decoded = RouteMapper.decodePolyline(encoded)
         assertEquals(route.size, decoded.size)
         for (i in route.indices) {
