@@ -242,7 +242,7 @@ fun RouteMapView(
                 onClick = { mapView.controller.zoomIn() },
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(44.dp) // RNF02
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.component_map_zoom_in))
             }
@@ -253,7 +253,7 @@ fun RouteMapView(
                 onClick = { mapView.controller.zoomOut() },
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(44.dp) // RNF02
             ) {
                 Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.component_map_zoom_out))
             }
@@ -270,7 +270,7 @@ fun RouteMapView(
                 },
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = BrandPrimary,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(44.dp) // RNF02
             ) {
                 Icon(Icons.Default.CenterFocusStrong, contentDescription = stringResource(R.string.component_map_center_route))
             }

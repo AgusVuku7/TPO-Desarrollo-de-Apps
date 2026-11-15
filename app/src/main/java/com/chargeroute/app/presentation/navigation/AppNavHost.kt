@@ -24,10 +24,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.chargeroute.app.core.di.AppContainer
-import com.chargeroute.app.core.theme.ThemeMode
+import com.chargeroute.app.domain.model.ThemeMode
 import com.chargeroute.app.presentation.components.OfflineBanner
 import com.chargeroute.app.presentation.screens.arrival.ArrivalScreen
 import com.chargeroute.app.presentation.screens.carsetup.CarSetupScreen
@@ -57,13 +58,14 @@ fun AppNavHost(
     onThemeModeChange: (ThemeMode) -> Unit
 ) {
     val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
     val sessionViewModel: SessionViewModel = viewModel {
-        SessionViewModel(container.userPreferences)
+        SessionViewModel(container.userRepository)
     }
-    // Hasta que DataStore no devuelve la sesion (null) no se dibuja nada, para no mostrar el login de mas
+    // Hasta que no se lee la sesion guardada (null) no se dibuja nada, para no mostrar el login de mas
     val sessionState by sessionViewModel.session.collectAsStateWithLifecycle()
     val session = sessionState ?: return
 
@@ -124,6 +126,7 @@ fun AppNavHost(
                     userName = session.userName,
                     userEmail = session.userEmail,
                     savedTripsCount = savedTrips.size,
+                    currentRoute = backStackEntry?.destination?.route,
                     currentThemeMode = currentThemeMode,
                     onThemeModeChange = onThemeModeChange,
                     // El inicio es la pantalla del auto: se vuelve a ella sin apilar copias
@@ -171,7 +174,7 @@ fun AppNavHost(
                 // 1. Login
                 composable(Screen.Login.route) {
                     val loginViewModel: LoginViewModel = viewModel {
-                        LoginViewModel(container.userPreferences)
+                        LoginViewModel(container.userRepository)
                     }
                     val state by loginViewModel.uiState.collectAsStateWithLifecycle()
 

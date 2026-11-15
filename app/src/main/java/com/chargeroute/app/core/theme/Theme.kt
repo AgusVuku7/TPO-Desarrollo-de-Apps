@@ -34,7 +34,20 @@ private val DarkColorScheme = darkColorScheme(
     surfaceContainerHigh = DarkSurfaceElevated,
     surfaceContainerHighest = DarkSurfaceElevated,
     outline = DarkBorder,
-    error = BatteryRed
+    error = BatteryRed,
+    // Otros roles que Material 3 usa en divisores, errores y componentes inversos.
+    // Si no se definen, Material 3 pone sus colores de base
+    outlineVariant = DarkBorder,
+    onError = DarkBackground,
+    errorContainer = DarkSurfaceElevated,
+    onErrorContainer = BatteryRed,
+    tertiary = ChargingStationBlue,
+    onTertiary = DarkBackground,
+    tertiaryContainer = DarkBorder,
+    onTertiaryContainer = DarkTextPrimary,
+    inverseSurface = LightSurface,
+    inverseOnSurface = LightTextPrimary,
+    inversePrimary = BrandPrimary
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -59,15 +72,19 @@ private val LightColorScheme = lightColorScheme(
     surfaceContainerHigh = LightSurfaceElevated,
     surfaceContainerHighest = LightSurfaceElevated,
     outline = LightBorder,
-    error = BatteryRed
+    error = BatteryRed,
+    outlineVariant = LightBorder,
+    onError = LightSurface,
+    errorContainer = LightSurfaceElevated,
+    onErrorContainer = WarningTextRed,
+    tertiary = RouteBlue,
+    onTertiary = LightSurface,
+    tertiaryContainer = LightBorder,
+    onTertiaryContainer = LightTextPrimary,
+    inverseSurface = DarkSurface,
+    inverseOnSurface = DarkTextPrimary,
+    inversePrimary = BrandPrimaryDark
 )
-
-// Son las tres opciones del menu. Si no hay nada guardado se usa LIGHT.
-enum class ThemeMode {
-    LIGHT,
-    DARK,
-    AUTO_SENSOR // Uses TYPE_LIGHT ambient sensor (RNF04, RNF05)
-}
 
 @Composable
 fun ChargeRouteTheme(
