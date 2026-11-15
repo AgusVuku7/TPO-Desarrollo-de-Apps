@@ -25,6 +25,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+// Aviso del GPS. El texto lo elige la pantalla (el ViewModel no tiene Context)
+enum class GpsNotice { SEARCHING, NO_PERMISSION, OFF_ROUTE }
+
 data class ActiveNavigationUiState(
     val trip: Trip? = null,
     val progress: Float = 0.0f, // 0.0 a 1.0 a lo largo del viaje
@@ -32,7 +35,7 @@ data class ActiveNavigationUiState(
     val currentBatteryPercent: Int = BatteryLevels.DEFAULT_INITIAL_PERCENT,
     val distanceToNextStopKm: Int = 0,
     val distanceRemainingTotalKm: Int = 0,
-    val currentManeuver: String = "",
+    val stepInstruction: String? = null, // indicacion del servicio de rutas para el proximo paso (null si no hay)
     val maneuverDistance: String = "",
     val isArrived: Boolean = false,
     val isSimulationPlaying: Boolean = false,
@@ -40,11 +43,16 @@ data class ActiveNavigationUiState(
     val nextStopIndex: Int = 0, // proxima parada (o la parada en la que se esta cargando)
     val isCharging: Boolean = false,
     val isGpsTracking: Boolean = false,
-    val gpsNotice: String? = null,
+    val gpsNotice: GpsNotice? = null,
+    val offRouteKm: Int = 0, // km hasta la ruta, para el aviso OFF_ROUTE
     val maneuverType: String = "straight"
 ) {
     val isLowBatteryWarning: Boolean
         get() = currentBatteryPercent < BatteryLevels.LOW_PERCENT
+
+    // Minutos de manejo que faltan (0 si no hay viaje)
+    val minutesLeft: Int
+        get() = ((trip?.routePlan?.driveDurationMinutes ?: 0) * (1f - progress)).toInt()
 
     // Proxima parada de carga (null si ya se pasaron todas)
     val nextStop: TripStop?
@@ -118,7 +126,7 @@ class ActiveNavigationViewModel(
         val totalKm = state.trip?.routePlan?.distanceKm ?: return
         _uiState.update {
             it.copy(
-                currentManeuver = next.instruction,
+                stepInstruction = next.instruction,
                 maneuverDistance = distanceText((next.progress - state.progress) * totalKm),
                 maneuverType = next.maneuver
             )
@@ -171,22 +179,25 @@ class ActiveNavigationViewModel(
                 val stopProgress = stopProgresses.getOrNull(nextStopIndex)
                 val stopDist = if (stopProgress != null) (totalDist * stopProgress).toInt() else totalDist
 
-                _uiState.value = ActiveNavigationUiState(
-                    trip = trip,
-                    progress = currentProg,
-                    isArrived = false,
-                    isSimulationPlaying = false,
-                    currentSpeedKmH = currentSpeed,
-                    currentBatteryPercent = trip.currentBatteryPercent,
-                    distanceRemainingTotalKm = if (isSameTrip) _uiState.value.distanceRemainingTotalKm else totalDist,
-                    distanceToNextStopKm = if (isSameTrip) _uiState.value.distanceToNextStopKm else stopDist,
-                    currentManeuver = if (isSameTrip) _uiState.value.currentManeuver else "Seguí la ruta marcada",
-                    maneuverDistance = if (isSameTrip) _uiState.value.maneuverDistance else "$stopDist km",
-                    stopProgresses = stopProgresses,
-                    nextStopIndex = nextStopIndex,
-                    isCharging = isSameTrip && _uiState.value.isCharging,
-                    maneuverType = if (isSameTrip) _uiState.value.maneuverType else "straight"
-                )
+                val previous = _uiState.value
+                _uiState.update {
+                    it.copy(
+                        trip = trip,
+                        progress = currentProg,
+                        isArrived = false,
+                        isSimulationPlaying = false,
+                        currentSpeedKmH = currentSpeed,
+                        currentBatteryPercent = trip.currentBatteryPercent,
+                        distanceRemainingTotalKm = if (isSameTrip) previous.distanceRemainingTotalKm else totalDist,
+                        distanceToNextStopKm = if (isSameTrip) previous.distanceToNextStopKm else stopDist,
+                        stepInstruction = if (isSameTrip) previous.stepInstruction else null,
+                        maneuverDistance = if (isSameTrip) previous.maneuverDistance else "$stopDist km",
+                        stopProgresses = stopProgresses,
+                        nextStopIndex = nextStopIndex,
+                        isCharging = isSameTrip && previous.isCharging,
+                        maneuverType = if (isSameTrip) previous.maneuverType else "straight"
+                    )
+                }
                 loadNavigationSteps(trip)
             }
         }
@@ -251,7 +262,8 @@ class ActiveNavigationViewModel(
             }
             if (_uiState.value.progress >= ARRIVED_PROGRESS) {
                 stopSimulation()
-                markArrived()
+                // advanceProgress ya lo marco al llegar: no se vuelve a marcar
+                if (!_uiState.value.isArrived) markArrived()
             }
         }
     }
@@ -270,14 +282,14 @@ class ActiveNavigationViewModel(
     private fun startGpsTracking() {
         val client = locationClient ?: return
         stopSimulation()
-        _uiState.update { it.copy(isGpsTracking = true, gpsNotice = "Buscando señal GPS...") }
+        _uiState.update { it.copy(isGpsTracking = true, gpsNotice = GpsNotice.SEARCHING) }
         gpsJob = viewModelScope.launch {
             try {
                 client.locationUpdates().collect { location ->
                     applyGpsPosition(location.latitude, location.longitude, location.speed)
                 }
             } catch (_: SecurityException) {
-                _uiState.update { it.copy(isGpsTracking = false, gpsNotice = "Falta el permiso de ubicación.") }
+                _uiState.update { it.copy(isGpsTracking = false, gpsNotice = GpsNotice.NO_PERMISSION) }
             }
         }
     }
@@ -309,7 +321,7 @@ class ActiveNavigationViewModel(
         // Lejos de la ruta: el puntero se queda en el ultimo punto valido y se avisa
         if (match.distanceToRouteKm > MAX_DISTANCE_FROM_ROUTE_KM) {
             val km = match.distanceToRouteKm.toInt()
-            _uiState.update { it.copy(gpsNotice = "Estás fuera de la ruta (a $km km).") }
+            _uiState.update { it.copy(gpsNotice = GpsNotice.OFF_ROUTE, offRouteKm = km) }
             return
         }
 
@@ -379,16 +391,7 @@ class ActiveNavigationViewModel(
         batteryExact = if (reachedStop) null else newBatteryExact
 
         // Indicaciones segun lo que viene en la ruta
-        val destinationName = trip?.destination?.name ?: "tu destino"
         val step = nextStep(newProgress)
-        val maneuver = when {
-            arrived -> "Has llegado a tu destino"
-            reachedStop && nextStop != null -> "Cargando en ${nextStop.station.name}"
-            step != null -> step.instruction
-            // Sin indicaciones (por ejemplo sin internet) se muestra hacia donde se va
-            nextStop != null -> "Seguí la ruta hacia ${nextStop.station.name}"
-            else -> "Seguí la ruta hacia $destinationName"
-        }
 
         val maneuverDist = when {
             arrived || reachedStop -> "0 m"
@@ -415,7 +418,7 @@ class ActiveNavigationViewModel(
                 distanceToNextStopKm = stopDistanceKm,
                 currentSpeedKmH = speed,
                 currentBatteryPercent = remainingBattery,
-                currentManeuver = maneuver,
+                stepInstruction = step?.instruction,
                 maneuverDistance = maneuverDist,
                 isArrived = arrived,
                 nextStopIndex = stopIndex,

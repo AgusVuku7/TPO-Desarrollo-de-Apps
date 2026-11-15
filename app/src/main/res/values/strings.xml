@@ -213,4 +213,10 @@
     <string name="nav_charger_default">el cargador</string>
     <string name="nav_charged_hint">Cargado. Tocá Simular viaje para seguir</string>
     <string name="nav_next_charger">%1$s • %2$d km</string>
+    <string name="nav_gps_searching">Buscando señal GPS…</string>
+    <string name="nav_gps_no_permission">Falta el permiso de ubicación.</string>
+    <string name="nav_gps_off_route">Estás fuera de la ruta (a %1$d km).</string>
+    <string name="nav_arrived">Has llegado a tu destino</string>
+    <string name="nav_charging_at">Cargando en %1$s</string>
+    <string name="nav_follow_route_to">Seguí la ruta hacia %1$s</string>
 </resources>
