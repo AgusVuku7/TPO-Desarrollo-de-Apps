@@ -652,7 +652,7 @@ private fun BatteryCard(
             Slider(
                 value = state.initialBatteryPercent.toFloat(),
                 onValueChange = { onBatteryChanged(it.toInt()) },
-                valueRange = 5f..100f,
+                valueRange = BatteryLevels.MIN_PERCENT.toFloat()..BatteryLevels.MAX_PERCENT.toFloat(),
                 steps = 18,
                 colors = SliderDefaults.colors(
                     thumbColor = BrandPrimary,
