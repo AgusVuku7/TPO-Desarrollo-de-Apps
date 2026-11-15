@@ -175,9 +175,9 @@ fun RoutePlanningScreen(
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            state.errorMessage?.let { msg ->
+            state.error?.let { error ->
                 ErrorRetryBanner(
-                    errorMessage = msg,
+                    errorMessage = planningErrorText(error, state.notFoundText),
                     onRetry = onCalculateClick,
                     onOpenSavedRoute = onOpenSavedRoute,
                     modifier = Modifier.padding(bottom = 12.dp)
@@ -185,7 +185,7 @@ fun RoutePlanningScreen(
             }
 
             state.infoNotice?.let { notice ->
-                PlanningInfoNotice(notice = notice)
+                PlanningInfoNotice(notice = planningNoticeText(notice))
             }
 
             Text(
@@ -336,7 +336,27 @@ private fun PlanningBottomBar(
     }
 }
 
-// Aviso informativo (texto que viene del ViewModel)
+// El ViewModel solo dice que error fue; el texto se elige aca
+@Composable
+private fun planningErrorText(error: RoutePlanningError, notFoundText: String): String = when (error) {
+    RoutePlanningError.EMPTY_FIELDS -> stringResource(R.string.planning_error_empty_fields)
+    RoutePlanningError.ADDRESS_NOT_FOUND -> stringResource(R.string.planning_error_address_not_found, notFoundText)
+    RoutePlanningError.SEARCH_FAILED -> stringResource(R.string.planning_error_search_failed)
+    RoutePlanningError.NO_CONNECTION -> stringResource(R.string.planning_error_no_connection)
+    RoutePlanningError.ROUTE_SERVICE -> stringResource(R.string.planning_error_route_service)
+    RoutePlanningError.UNKNOWN -> stringResource(R.string.planning_error_unknown)
+    RoutePlanningError.SAVE_FAILED -> stringResource(R.string.planning_error_save_failed)
+}
+
+@Composable
+private fun planningNoticeText(notice: RoutePlanningNotice): String = when (notice) {
+    RoutePlanningNotice.PERMISSION_DENIED -> stringResource(R.string.planning_notice_permission_denied)
+    RoutePlanningNotice.GPS_OBTAINED -> stringResource(R.string.planning_notice_gps_obtained)
+    RoutePlanningNotice.GPS_OUTSIDE_ARGENTINA -> stringResource(R.string.planning_notice_gps_outside_argentina)
+    RoutePlanningNotice.GPS_UNAVAILABLE -> stringResource(R.string.planning_notice_gps_unavailable)
+}
+
+// Aviso informativo (el texto ya viene resuelto)
 @Composable
 private fun PlanningInfoNotice(notice: String) {
     Surface(

@@ -119,6 +119,17 @@
     <string name="planning_route_no_stops">%1$d km • sin paradas de carga</string>
     <string name="planning_route_with_stops">%1$d km • parada en %2$s</string>
     <string name="planning_route_with_stops_detour">%1$d km (incluye %2$d km de desvío para cargar) • parada en %3$s</string>
+    <string name="planning_error_empty_fields">Ingresá origen y destino.</string>
+    <string name="planning_error_address_not_found">No encontramos \"%1$s\". Probá agregando la ciudad.</string>
+    <string name="planning_error_search_failed">No se pudo buscar la dirección. Revisá tu conexión.</string>
+    <string name="planning_error_no_connection">Sin conexión: no se puede calcular una ruta nueva. Podés reintentar o abrir una ruta guardada.</string>
+    <string name="planning_error_route_service">No se pudo consultar el servidor de rutas. Podés reintentar o abrir una ruta guardada.</string>
+    <string name="planning_error_unknown">No se pudo calcular la ruta. Podés reintentar o abrir una ruta guardada.</string>
+    <string name="planning_error_save_failed">No se pudo guardar el viaje. Probá de nuevo.</string>
+    <string name="planning_notice_permission_denied">No diste permiso de ubicación. Escribí el origen a mano o activalo desde Ajustes.</string>
+    <string name="planning_notice_gps_obtained">Ubicación GPS obtenida con éxito.</string>
+    <string name="planning_notice_gps_outside_argentina">Emulador detectado con GPS de EE.UU. Se fijó el origen en Buenos Aires (Obelisco) para calcular distancias viales reales en Argentina.</string>
+    <string name="planning_notice_gps_unavailable">No se pudo obtener señal GPS. Usando ubicación predeterminada en Buenos Aires.</string>
     <!-- Resumen de ruta -->
     <string name="summary_start_trip">Iniciar viaje</string>
     <string name="summary_offline_saved">Sin conexión • cargadores guardados el %1$s</string>
