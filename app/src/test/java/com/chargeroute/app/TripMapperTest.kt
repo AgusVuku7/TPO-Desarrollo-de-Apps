@@ -72,9 +72,9 @@ class TripMapperTest {
     }
 
     @Test
-    fun vehicleWithoutConnectorsIsSavedAsCcs2() {
-        // Comportamiento actual: sin conectores se guarda "CCS2" por defecto
-        assertEquals("CCS2", TripMapper.toEntity(trip(emptyList())).vehicleConnector)
+    fun vehicleWithoutConnectorsIsSavedEmpty() {
+        // Sin conectores no se inventa ninguno: queda vacio
+        assertEquals("", TripMapper.toEntity(trip(emptyList())).vehicleConnector)
     }
 
     @Test

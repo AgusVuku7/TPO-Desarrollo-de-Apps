@@ -271,7 +271,7 @@ private fun StationInfoCard(station: Station, vehicle: Vehicle?) {
                                 R.string.station_connector_line,
                                 conn.type.displayName,
                                 conn.powerKw.toInt(),
-                                if (conn.powerKw >= 50) "DC" else "AC"
+                                if (conn.type.isDc) "DC" else "AC"
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = if (isCarCompatible) FontWeight.SemiBold else FontWeight.Normal

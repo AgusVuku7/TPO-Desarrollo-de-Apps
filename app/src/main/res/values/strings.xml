@@ -157,7 +157,6 @@
     <string name="arrival_title">VIAJE FINALIZADO</string>
     <string name="arrival_plan_new_trip">Planificar nuevo viaje</string>
     <string name="arrival_view_summary">Ver resumen del viaje</string>
-    <string name="arrival_illustrative">Resumen de un viaje ilustrativo.</string>
     <string name="arrival_reached">Llegaste a destino</string>
     <string name="arrival_greeting">¡Hola, %1$s!</string>
     <string name="arrival_subtitle">%1$s • Todo el camino resuelto.</string>
