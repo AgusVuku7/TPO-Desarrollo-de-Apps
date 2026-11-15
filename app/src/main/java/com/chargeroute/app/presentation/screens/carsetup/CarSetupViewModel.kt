@@ -3,6 +3,8 @@ package com.chargeroute.app.presentation.screens.carsetup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chargeroute.app.domain.model.BatteryLevels
+import com.chargeroute.app.domain.model.Consumption
+import com.chargeroute.app.domain.model.RangeEstimator
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.usecase.GetVehicleCatalogUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,25 +21,19 @@ data class CarSetupUiState(
     val acActive: Boolean = true
 ) {
     val usableBatteryKwh: Double
-        get() = selectedVehicle?.usableBatteryKwh ?: 64.0
+        get() = selectedVehicle?.usableBatteryKwh ?: 0.0
 
     val availableKwh: Double
         get() = (usableBatteryKwh * initialBatteryPercent / 100.0)
 
     val baseConsumptionKwhPer100Km: Double
-        get() = selectedVehicle?.baseConsumptionKwhPer100Km ?: 15.5
-
-    val acMultiplier: Double
-        get() = if (acActive) 1.10 else 1.00
+        get() = selectedVehicle?.baseConsumptionKwhPer100Km ?: 0.0
 
     val effectiveConsumptionKwhPer100Km: Double
-        get() = baseConsumptionKwhPer100Km * acMultiplier
+        get() = Consumption.effectiveKwhPer100Km(baseConsumptionKwhPer100Km, acActive)
 
     val estimatedRangeKm: Double
-        get() {
-            val cons = effectiveConsumptionKwhPer100Km
-            return if (cons > 0) (availableKwh / cons) * 100.0 else 0.0
-        }
+        get() = RangeEstimator.rangeKm(initialBatteryPercent, usableBatteryKwh, effectiveConsumptionKwhPer100Km)
 }
 
 class CarSetupViewModel(

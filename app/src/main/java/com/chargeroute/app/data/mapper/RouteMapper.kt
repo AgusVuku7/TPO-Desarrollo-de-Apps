@@ -2,7 +2,6 @@ package com.chargeroute.app.data.mapper
 
 import com.chargeroute.app.data.local.entity.RouteEntity
 import com.chargeroute.app.data.local.entity.TripStopEntity
-import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.LocationPoint
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Station
@@ -84,11 +83,7 @@ object RouteMapper {
             calculatedAtMillis = routeEntity.calculatedAtMillis,
             directDistanceKm = routeEntity.directDistanceKm,
             departureTime = TripClock.at(routeEntity.calculatedAtMillis, 0),
-            arrivalTime = TripClock.at(routeEntity.calculatedAtMillis, routeEntity.totalDurationMinutes),
-            isLowBatteryWarning = routeEntity.arrivalBatteryPercent < BatteryLevels.LOW_PERCENT,
-            warningMessage = if (routeEntity.arrivalBatteryPercent < BatteryLevels.LOW_PERCENT) {
-                "Batería baja al llegar: ${routeEntity.arrivalBatteryPercent}%. Mantené la parada en ${stops.firstOrNull()?.station?.name ?: "estación de recarga"}."
-            } else null
+            arrivalTime = TripClock.at(routeEntity.calculatedAtMillis, routeEntity.totalDurationMinutes)
         )
     }
 

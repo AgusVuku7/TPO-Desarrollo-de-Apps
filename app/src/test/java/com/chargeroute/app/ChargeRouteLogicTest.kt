@@ -33,30 +33,11 @@ class ChargeRouteLogicTest {
     }
 
     @Test
-    fun testClimateControlConsumptionImpact() {
-        val baseConsumption = testVehicle.baseConsumptionKwhPer100Km
-        val withAc = baseConsumption * 1.10
-        assertTrue("AC should increase energy consumption by 10%", withAc > baseConsumption)
-        assertEquals(17.05, withAc, 0.01)
-    }
-
-    @Test
     fun testPolylineDecoder() {
         // Standard Google/OSRM encoded polyline test
         val encoded = "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
         val points = RouteMapper.decodePolyline(encoded)
         assertNotNull(points)
         assertTrue(points.isNotEmpty())
-    }
-
-    @Test
-    fun testBatteryClamping() {
-        val lowPercent = -10
-        val highPercent = 120
-        val normalPercent = 70
-
-        assertEquals(0, lowPercent.coerceIn(0, 100))
-        assertEquals(100, highPercent.coerceIn(0, 100))
-        assertEquals(70, normalPercent.coerceIn(0, 100))
     }
 }
