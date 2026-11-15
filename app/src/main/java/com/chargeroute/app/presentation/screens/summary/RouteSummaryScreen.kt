@@ -54,6 +54,7 @@ import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.core.theme.WarningTextRed
 import com.chargeroute.app.domain.model.BatteryLevels
+import com.chargeroute.app.domain.model.ChargingPlanner
 import com.chargeroute.app.domain.model.DataFreshness
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.TripStop
@@ -168,7 +169,7 @@ fun RouteSummaryScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Aviso si con lo planificado no se llega con carga suficiente
-                if (plan.arrivalBatteryPercent < 10) {
+                if (plan.arrivalBatteryPercent < ChargingPlanner.SAFETY_RESERVE_PERCENT) {
                     LowBatteryWarning(hasStops = plan.stops.isNotEmpty())
                 }
 

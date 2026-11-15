@@ -24,7 +24,7 @@ object TripMapper {
             initialBatteryPercent = trip.initialBatteryPercent,
             currentBatteryPercent = trip.currentBatteryPercent,
             vehicleRangeKm = trip.vehicle.wltpRangeKm,
-            vehicleConnector = trip.vehicle.supportedConnectors.firstOrNull()?.name ?: "CCS2",
+            vehicleConnector = trip.vehicle.supportedConnectors.firstOrNull()?.name ?: "",
             acActive = trip.acActive,
             isCompleted = trip.isCompleted,
             createdAtMillis = trip.createdAtMillis

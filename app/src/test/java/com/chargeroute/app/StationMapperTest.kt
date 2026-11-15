@@ -97,4 +97,25 @@ class StationMapperTest {
 
         assertEquals(emptyList<String>(), StationMapper.fromEntity(entity).amenities)
     }
+
+    @Test
+    fun unknownStoredConnectorIsDiscarded() {
+        val entity = StationEntity(
+            id = "ocm_1",
+            remoteId = "1",
+            name = "Estación Test",
+            address = "Ruta 2 km 100",
+            latitude = -35.5,
+            longitude = -58.0,
+            connectorsJson = """[{"type":"GB/T","powerKw":50.0,"isCompatible":true},{"type":"CHADEMO","powerKw":50.0,"isCompatible":true}]""",
+            availableCount = 0,
+            totalCount = 2,
+            amenitiesJson = "[]",
+            operator = "",
+            notes = "",
+            lastUpdatedMillis = 0L
+        )
+
+        assertEquals(listOf(ConnectorType.CHADEMO), StationMapper.fromEntity(entity).connectors.map { it.type })
+    }
 }

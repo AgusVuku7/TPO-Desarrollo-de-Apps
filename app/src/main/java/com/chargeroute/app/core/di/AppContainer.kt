@@ -81,7 +81,7 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
     }
 
     override val routeRepository: RouteRepository by lazy {
-        RouteRepositoryImpl(database, networkObserver, stationRepository)
+        RouteRepositoryImpl(networkObserver, stationRepository)
     }
 
     override val tripRepository: TripRepository by lazy {

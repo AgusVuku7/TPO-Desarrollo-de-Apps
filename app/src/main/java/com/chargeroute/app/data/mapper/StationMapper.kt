@@ -27,9 +27,11 @@ object StationMapper {
             emptyList()
         }
 
-        val domainConnectors = connectorDtos.map { dto ->
+        // Si el tipo guardado no se reconoce se descarta el conector (igual que en fromOcmDto)
+        val domainConnectors = connectorDtos.mapNotNull { dto ->
+            val type = ConnectorType.fromString(dto.type) ?: return@mapNotNull null
             Connector(
-                type = ConnectorType.fromString(dto.type),
+                type = type,
                 powerKw = dto.powerKw,
                 isCompatible = dto.isCompatible
             )

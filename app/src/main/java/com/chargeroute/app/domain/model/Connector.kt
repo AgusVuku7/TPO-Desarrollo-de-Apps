@@ -1,16 +1,19 @@
 package com.chargeroute.app.domain.model
 
-enum class ConnectorType(val displayName: String, val category: String) {
-    CCS2("CCS2", "DC Carga rápida"),
-    TYPE_2("Type 2 (Mennekes)", "AC Carga semi-rápida"),
-    CHADEMO("CHAdeMO", "DC Carga rápida"),
-    CCS1("CCS1", "DC Carga rápida"),
-    TESLA("Tesla Supercharger", "DC Propietario"),
-    SCHUKO("Doméstico (Schuko)", "AC Carga lenta");
+// isDc: true si es corriente continua (carga rapida), false si es alterna
+enum class ConnectorType(val displayName: String, val isDc: Boolean) {
+    CCS2("CCS2", true),
+    TYPE_2("Type 2 (Mennekes)", false),
+    CHADEMO("CHAdeMO", true),
+    CCS1("CCS1", true),
+    TESLA("Tesla Supercharger", true),
+    SCHUKO("Doméstico (Schuko)", false);
 
     companion object {
-        fun fromString(name: String): ConnectorType {
-            return entries.firstOrNull { it.name.equals(name, ignoreCase = true) || it.displayName.contains(name, ignoreCase = true) } ?: CCS2
+        // Devuelve null si el texto no coincide con ningun conector conocido
+        fun fromString(name: String): ConnectorType? {
+            if (name.isEmpty()) return null
+            return entries.firstOrNull { it.name.equals(name, ignoreCase = true) || it.displayName.contains(name, ignoreCase = true) }
         }
     }
 }

@@ -40,7 +40,7 @@ class RouteMapperTest {
         chargeDurationMinutes = 30,
         stops = stops,
         polylinePoints = points,
-        encodedPolyline = RouteMapper.encodePolyline(points),
+        encodedPolyline = encodePolyline(points),
         arrivalBatteryPercent = 40,
         consumptionKwhPer100Km = 17.1,
         calculatedAtMillis = 0L,

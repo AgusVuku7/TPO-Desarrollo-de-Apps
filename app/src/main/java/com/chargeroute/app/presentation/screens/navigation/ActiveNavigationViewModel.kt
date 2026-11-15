@@ -209,7 +209,7 @@ class ActiveNavigationViewModel(
      * Permite persistir tanto si el ViewModel ya tiene cargado el trip como si se le pasa el tripId explícito.
      */
     fun updateBattery(newPercent: Int, tripId: String? = null): Job {
-        val clamped = newPercent.coerceIn(5, 100)
+        val clamped = newPercent.coerceIn(BatteryLevels.MIN_PERCENT, BatteryLevels.MAX_PERCENT)
         batteryExact = null
         _uiState.update { it.copy(currentBatteryPercent = clamped) }
         val job = viewModelScope.launch {
@@ -382,10 +382,10 @@ class ActiveNavigationViewModel(
         } else {
             movedProgress * 30f
         }
-        val newBatteryExact = (batteryNow - batteryDrop).coerceIn(5f, 100f)
+        val newBatteryExact = (batteryNow - batteryDrop).coerceIn(BatteryLevels.MIN_PERCENT.toFloat(), BatteryLevels.MAX_PERCENT.toFloat())
         val remainingBattery = when {
-            arrived -> targetArrivalBat.coerceIn(0, 100)
-            reachedStop && nextStop != null -> nextStop.departureBatteryPercent.coerceIn(0, 100)
+            arrived -> targetArrivalBat.coerceIn(0, BatteryLevels.MAX_PERCENT)
+            reachedStop && nextStop != null -> nextStop.departureBatteryPercent.coerceIn(0, BatteryLevels.MAX_PERCENT)
             else -> newBatteryExact.toInt()
         }
         batteryExact = if (reachedStop) null else newBatteryExact

@@ -1,6 +1,5 @@
 package com.chargeroute.app
 
-import com.chargeroute.app.data.mapper.RouteMapper
 import com.chargeroute.app.data.mapper.TripMapper
 import com.chargeroute.app.domain.model.ConnectorType
 import com.chargeroute.app.domain.model.LocationPoint
@@ -29,7 +28,7 @@ class TripMapperTest {
         origin = origin, destination = destination,
         distanceKm = 400.0, totalDurationMinutes = 300, driveDurationMinutes = 270,
         chargeDurationMinutes = 30, stops = emptyList(),
-        polylinePoints = points, encodedPolyline = RouteMapper.encodePolyline(points),
+        polylinePoints = points, encodedPolyline = encodePolyline(points),
         arrivalBatteryPercent = 30, consumptionKwhPer100Km = 15.5, calculatedAtMillis = 0L
     )
 
@@ -73,9 +72,9 @@ class TripMapperTest {
     }
 
     @Test
-    fun vehicleWithoutConnectorsIsSavedAsCcs2() {
-        // Comportamiento actual: sin conectores se guarda "CCS2" por defecto
-        assertEquals("CCS2", TripMapper.toEntity(trip(emptyList())).vehicleConnector)
+    fun vehicleWithoutConnectorsIsSavedEmpty() {
+        // Sin conectores no se inventa ninguno: queda vacio
+        assertEquals("", TripMapper.toEntity(trip(emptyList())).vehicleConnector)
     }
 
     @Test

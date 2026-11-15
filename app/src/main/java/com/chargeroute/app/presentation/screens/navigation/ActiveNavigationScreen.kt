@@ -66,6 +66,7 @@ import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.core.theme.NavigationBannerCharging
 import com.chargeroute.app.core.theme.NavigationBannerDark
+import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.ReachEstimate
 import com.chargeroute.app.domain.model.TripStop
 import com.chargeroute.app.presentation.components.BatteryLevelBadge
@@ -502,10 +503,10 @@ private fun BatteryControls(batteryPercent: Int, onBatteryUpdated: (Int) -> Unit
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { onBatteryUpdated(batteryPercent - 5) }) {
+            IconButton(onClick = { onBatteryUpdated(batteryPercent - BatteryLevels.STEP_PERCENT) }) {
                 Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.nav_battery_less))
             }
-            IconButton(onClick = { onBatteryUpdated(batteryPercent + 5) }) {
+            IconButton(onClick = { onBatteryUpdated(batteryPercent + BatteryLevels.STEP_PERCENT) }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.nav_battery_more))
             }
         }
