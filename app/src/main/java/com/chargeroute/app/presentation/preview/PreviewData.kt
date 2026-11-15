@@ -38,6 +38,11 @@ object PreviewData {
         latitude = -36.3132,
         longitude = -57.6792,
         connectors = listOf(Connector(ConnectorType.CCS2, 60.0), Connector(ConnectorType.TYPE_2, 22.0)),
+        availableCount = 2,
+        totalCount = 4,
+        amenities = listOf("24 h", "Café", "Baños", "Wi-Fi"),
+        operator = "YPF Punto Eléctrico",
+        notes = "Sin reserva previa. Confirmá tarifa y acceso antes de viajar.",
         lastUpdatedMillis = 0L
     )
 
@@ -48,7 +53,9 @@ object PreviewData {
         stopDurationMinutes = 35,
         arrivalBatteryPercent = 19,
         departureBatteryPercent = 71,
-        chargedEnergyKwh = 33.3
+        chargedEnergyKwh = 33.3,
+        arrivalTime = "12:13",
+        departureTime = "12:48"
     )
 
     val routePlan = RoutePlan(
