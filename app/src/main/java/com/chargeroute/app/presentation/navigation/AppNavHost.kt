@@ -14,6 +14,8 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -224,6 +226,11 @@ fun AppNavHost(
                 // 3. Route Planning (Paso 2 de 3)
                 composable(Screen.RoutePlanning.route) {
                     val state by routePlanningViewModel.uiState.collectAsStateWithLifecycle()
+                    // El auto llega desde el paso 1; si Android mato el proceso se perdio y sin auto
+                    // no se puede calcular: se vuelve al paso 1 para elegirlo de nuevo
+                    LaunchedEffect(Unit) {
+                        if (routePlanningViewModel.uiState.value.vehicle == null) navController.popBackStack()
+                    }
                     // Cuando el viaje queda calculado y guardado, se pasa al resumen
                     LaunchedEffect(Unit) {
                         routePlanningViewModel.events.collect { event ->
@@ -291,6 +298,15 @@ fun AppNavHost(
                     val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
                     val stopId = backStackEntry.arguments?.getString(Screen.ARG_STOP_ID) ?: ""
                     val summaryState by routeSummaryViewModel.uiState.collectAsStateWithLifecycle()
+                    // Si Android mato el proceso, el ViewModel vuelve vacio: se recarga el viaje
+                    // con el id de la ruta (que si se conserva) antes de mostrar la parada
+                    // remember (no saveable): despues de la muerte del proceso tiene que arrancar en false
+                    var tripRequested by remember(tripId) { mutableStateOf(false) }
+                    LaunchedEffect(tripId) {
+                        if (summaryState.trip?.id != tripId) routeSummaryViewModel.loadTrip(tripId)
+                        tripRequested = true
+                    }
+                    if (!tripRequested || summaryState.isLoading) return@composable
                     val stop = summaryState.trip?.routePlan?.stops?.firstOrNull { it.id == stopId }
                         ?: summaryState.trip?.routePlan?.stops?.firstOrNull()
                     // Solo desde la navegacion se esta en el cargador; desde el resumen o
@@ -327,6 +343,10 @@ fun AppNavHost(
                 ) { backStackEntry ->
                     val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
                     val state by activeNavigationViewModel.uiState.collectAsStateWithLifecycle()
+                    // Tras la muerte del proceso el viaje se recupera de Room con el id de la ruta
+                    LaunchedEffect(tripId) {
+                        if (state.trip?.id != tripId) activeNavigationViewModel.loadTrip(tripId)
+                    }
 
                     ActiveNavigationScreen(
                         state = state,
@@ -364,6 +384,10 @@ fun AppNavHost(
                 ) { backStackEntry ->
                     val tripId = backStackEntry.arguments?.getString(Screen.ARG_TRIP_ID) ?: ""
                     val navState by activeNavigationViewModel.uiState.collectAsStateWithLifecycle()
+                    // Igual que en la navegacion: si el ViewModel volvio vacio se recarga el viaje
+                    LaunchedEffect(tripId) {
+                        if (navState.trip?.id != tripId) activeNavigationViewModel.loadTrip(tripId)
+                    }
 
                     ArrivalScreen(
                         trip = navState.trip,
