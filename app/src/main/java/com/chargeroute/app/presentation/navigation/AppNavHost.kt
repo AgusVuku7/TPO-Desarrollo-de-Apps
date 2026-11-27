@@ -293,16 +293,28 @@ fun AppNavHost(
                     val summaryState by routeSummaryViewModel.uiState.collectAsStateWithLifecycle()
                     val stop = summaryState.trip?.routePlan?.stops?.firstOrNull { it.id == stopId }
                         ?: summaryState.trip?.routePlan?.stops?.firstOrNull()
+                    // Solo desde la navegacion se esta en el cargador; desde el resumen o
+                    // Mis cargadores la pantalla es de consulta y no modifica la bateria del viaje
+                    val isAtCharger = remember(backStackEntry) {
+                        navController.previousBackStackEntry?.destination?.route ==
+                            Screen.ActiveNavigation.route
+                    }
 
                     StationDetailScreen(
                         stop = stop,
                         vehicle = summaryState.trip?.vehicle,
+                        isAtCharger = isAtCharger,
                         onUpdateBatteryAfterCharge = { newPercent ->
                             activeNavigationViewModel.updateBattery(newPercent, tripId)
                         },
                         onNavigateToCharger = {
-                            activeNavigationViewModel.loadTrip(tripId)
-                            navController.navigate(Screen.ActiveNavigation.createRoute(tripId))
+                            if (isAtCharger) {
+                                // La navegacion ya esta abajo en la pila: se vuelve a ella sin duplicarla
+                                navController.popBackStack()
+                            } else {
+                                activeNavigationViewModel.loadTrip(tripId)
+                                navController.navigate(Screen.ActiveNavigation.createRoute(tripId))
+                            }
                         },
                         onBackClick = { navController.popBackStack() }
                     )
