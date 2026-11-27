@@ -372,8 +372,8 @@ class ActiveNavigationViewModel(
         }
 
         // Batería baja según los km recorridos y el consumo del auto.
-        // Al llegar al cargador sube al porcentaje planificado.
-        val targetArrivalBat = current.trip?.routePlan?.arrivalBatteryPercent ?: 25
+        // Al llegar al cargador sube al porcentaje planificado; al destino se llega con la real
+        // (si el usuario corrigió la batería en el camino, no se pisa con la del plan)
         val trip = current.trip
         val batteryNow = batteryExact ?: current.currentBatteryPercent.toFloat()
         val movedProgress = newProgress - current.progress
@@ -384,7 +384,6 @@ class ActiveNavigationViewModel(
         }
         val newBatteryExact = (batteryNow - batteryDrop).coerceIn(BatteryLevels.MIN_PERCENT.toFloat(), BatteryLevels.MAX_PERCENT.toFloat())
         val remainingBattery = when {
-            arrived -> targetArrivalBat.coerceIn(0, BatteryLevels.MAX_PERCENT)
             reachedStop && nextStop != null -> nextStop.departureBatteryPercent.coerceIn(0, BatteryLevels.MAX_PERCENT)
             else -> newBatteryExact.toInt()
         }
@@ -427,7 +426,7 @@ class ActiveNavigationViewModel(
             )
         }
 
-        if (reachedStop && trip != null) {
+        if ((reachedStop || arrived) && trip != null) {
             viewModelScope.launch { updateBatteryUseCase(trip.id, remainingBattery) }
         }
 

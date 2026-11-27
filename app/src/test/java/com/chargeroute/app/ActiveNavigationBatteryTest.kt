@@ -338,6 +338,30 @@ class ActiveNavigationBatteryTest {
     }
 
     @Test
+    fun arrival_keepsRealBattery_notThePlannedOne() = runTest(testDispatcher) {
+        fakeRepository.saveTrip(createSampleTrip(id = "trip_real_arrival"))
+        viewModel.loadTrip("trip_real_arrival")
+        advanceUntilIdle()
+
+        // Frena en el cargador y el usuario carga menos de lo planificado (50 % en vez de 80 %)
+        viewModel.toggleSimulation()
+        advanceUntilIdle()
+        viewModel.updateBattery(50)
+        advanceUntilIdle()
+
+        // Sigue hasta el destino
+        viewModel.toggleSimulation()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isArrived)
+        assertTrue(
+            "Con menos carga tiene que llegar con menos que el 35 % planificado (llegó con ${state.currentBatteryPercent} %)",
+            state.currentBatteryPercent < sampleRoutePlan.arrivalBatteryPercent
+        )
+    }
+
+    @Test
     fun simulation_marksTripCompletedOnlyOnce_whenArriving() = runTest(testDispatcher) {
         fakeRepository.saveTrip(createSampleTrip(id = "trip_once"))
         viewModel.loadTrip("trip_once")
