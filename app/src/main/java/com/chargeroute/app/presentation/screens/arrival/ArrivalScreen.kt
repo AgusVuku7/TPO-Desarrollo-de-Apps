@@ -47,9 +47,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chargeroute.app.R
 import com.chargeroute.app.core.theme.BatteryGreen
+import com.chargeroute.app.core.theme.BatteryRed
 import com.chargeroute.app.core.theme.BrandPrimary
 import com.chargeroute.app.core.theme.ChargeRouteTheme
 import com.chargeroute.app.core.theme.RouteBlue
+import com.chargeroute.app.domain.model.BatteryLevels
 import com.chargeroute.app.domain.model.RangeEstimator
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.Trip
@@ -63,6 +65,8 @@ import java.util.Locale
 @Composable
 fun ArrivalScreen(
     trip: Trip?,
+    // Bateria con la que se llego de verdad (la del viaje), no la que estimaba el plan
+    arrivalBatteryPercent: Int,
     onPlanNewTripClick: () -> Unit,
     onViewSummaryClick: () -> Unit,
     onCloseClick: () -> Unit
@@ -110,7 +114,7 @@ fun ArrivalScreen(
             // Sin viaje no se muestran los datos del viaje
             if (trip != null) {
                 val plan = trip.routePlan
-                val percent = plan.arrivalBatteryPercent
+                val percent = arrivalBatteryPercent
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -344,6 +348,8 @@ private fun TripResultsCard(plan: RoutePlan) {
 // Tarjeta con el porcentaje de bateria que queda al llegar
 @Composable
 private fun BatteryRemainingCard(batteryRemaining: Int, remainingKwh: Double, rangeKm: Int) {
+    // Mismo criterio que el resumen: por debajo del nivel bajo se marca en rojo
+    val batteryColor = if (batteryRemaining >= BatteryLevels.LOW_PERCENT) BatteryGreen else BatteryRed
     TouchAccessibleCard(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -373,7 +379,7 @@ private fun BatteryRemainingCard(batteryRemaining: Int, remainingKwh: Double, ra
                     text = stringResource(R.string.arrival_battery_percent, batteryRemaining),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color = BatteryGreen
+                    color = batteryColor
                 )
             }
 
@@ -385,7 +391,7 @@ private fun BatteryRemainingCard(batteryRemaining: Int, remainingKwh: Double, ra
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = BatteryGreen,
+                color = batteryColor,
                 trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
             )
         }
@@ -398,6 +404,7 @@ private fun ArrivalScreenPreview() {
     ChargeRouteTheme(darkTheme = false) {
         ArrivalScreen(
             trip = PreviewData.trip,
+            arrivalBatteryPercent = PreviewData.trip.routePlan.arrivalBatteryPercent,
             onPlanNewTripClick = {},
             onViewSummaryClick = {},
             onCloseClick = {}
@@ -411,6 +418,7 @@ private fun ArrivalScreenDarkPreview() {
     ChargeRouteTheme(darkTheme = true) {
         ArrivalScreen(
             trip = PreviewData.trip,
+            arrivalBatteryPercent = PreviewData.trip.routePlan.arrivalBatteryPercent,
             onPlanNewTripClick = {},
             onViewSummaryClick = {},
             onCloseClick = {}

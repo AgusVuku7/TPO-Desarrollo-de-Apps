@@ -367,6 +367,7 @@ fun AppNavHost(
 
                     ArrivalScreen(
                         trip = navState.trip,
+                        arrivalBatteryPercent = navState.currentBatteryPercent,
                         onPlanNewTripClick = {
                             navController.navigate(Screen.CarSetup.route) {
                                 popUpTo(Screen.CarSetup.route) { inclusive = true }
