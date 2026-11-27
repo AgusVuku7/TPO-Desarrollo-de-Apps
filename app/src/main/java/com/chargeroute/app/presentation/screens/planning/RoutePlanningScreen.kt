@@ -344,6 +344,7 @@ private fun planningErrorText(error: RoutePlanningError, notFoundText: String): 
     RoutePlanningError.SEARCH_FAILED -> stringResource(R.string.planning_error_search_failed)
     RoutePlanningError.NO_CONNECTION -> stringResource(R.string.planning_error_no_connection)
     RoutePlanningError.ROUTE_SERVICE -> stringResource(R.string.planning_error_route_service)
+    RoutePlanningError.UNREACHABLE -> stringResource(R.string.planning_error_unreachable)
     RoutePlanningError.UNKNOWN -> stringResource(R.string.planning_error_unknown)
     RoutePlanningError.SAVE_FAILED -> stringResource(R.string.planning_error_save_failed)
 }

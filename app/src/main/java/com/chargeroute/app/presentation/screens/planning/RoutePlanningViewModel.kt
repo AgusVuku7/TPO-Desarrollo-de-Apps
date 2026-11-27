@@ -10,6 +10,7 @@ import com.chargeroute.app.domain.model.NoConnectionException
 import com.chargeroute.app.domain.model.RoutePlan
 import com.chargeroute.app.domain.model.RouteServiceException
 import com.chargeroute.app.domain.model.Trip
+import com.chargeroute.app.domain.model.UnreachableDestinationException
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.repository.TripRepository
 import com.chargeroute.app.domain.usecase.CalculateRouteUseCase
@@ -50,7 +51,7 @@ data class RoutePlanningUiState(
 
 // Que salio mal. El texto lo elige la pantalla (el ViewModel no tiene Context)
 enum class RoutePlanningError {
-    EMPTY_FIELDS, ADDRESS_NOT_FOUND, SEARCH_FAILED, NO_CONNECTION, ROUTE_SERVICE, UNKNOWN, SAVE_FAILED
+    EMPTY_FIELDS, ADDRESS_NOT_FOUND, SEARCH_FAILED, NO_CONNECTION, ROUTE_SERVICE, UNREACHABLE, UNKNOWN, SAVE_FAILED
 }
 
 // Avisos informativos. El texto tambien lo elige la pantalla
@@ -62,6 +63,7 @@ enum class RoutePlanningNotice {
 internal fun routeErrorFor(error: Throwable): RoutePlanningError = when (error) {
     is NoConnectionException -> RoutePlanningError.NO_CONNECTION
     is RouteServiceException -> RoutePlanningError.ROUTE_SERVICE
+    is UnreachableDestinationException -> RoutePlanningError.UNREACHABLE
     else -> RoutePlanningError.UNKNOWN
 }
 
