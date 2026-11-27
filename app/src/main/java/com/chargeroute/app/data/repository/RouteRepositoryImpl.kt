@@ -15,6 +15,7 @@ import com.chargeroute.app.domain.model.RouteServiceException
 import com.chargeroute.app.domain.model.StopSchedule
 import com.chargeroute.app.domain.model.TripClock
 import com.chargeroute.app.domain.model.TripStop
+import com.chargeroute.app.domain.model.UnreachableDestinationException
 import com.chargeroute.app.domain.model.Vehicle
 import com.chargeroute.app.domain.repository.RouteRepository
 import com.chargeroute.app.domain.repository.StationRepository
@@ -106,6 +107,11 @@ class RouteRepositoryImpl(
                     consumptionKwhPer100Km = consumptionKwhPer100Km,
                     initialBatteryPercent = initialBatteryPercent
                 )
+            }
+
+            // Si ni con las paradas se llega, no se devuelve un plan que el usuario pueda iniciar
+            if (!chargingPlan.reachesDestination) {
+                return@withContext Result.failure(UnreachableDestinationException())
             }
 
             // Paradas con su horario estimado (manejo hasta ahí + cargas anteriores).

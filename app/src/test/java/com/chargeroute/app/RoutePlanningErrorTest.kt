@@ -2,6 +2,7 @@ package com.chargeroute.app
 
 import com.chargeroute.app.domain.model.NoConnectionException
 import com.chargeroute.app.domain.model.RouteServiceException
+import com.chargeroute.app.domain.model.UnreachableDestinationException
 import com.chargeroute.app.presentation.screens.planning.RoutePlanningError
 import com.chargeroute.app.presentation.screens.planning.routeErrorFor
 import org.junit.Assert.assertEquals
@@ -17,6 +18,11 @@ class RoutePlanningErrorTest {
     @Test
     fun routeServiceException() {
         assertEquals(RoutePlanningError.ROUTE_SERVICE, routeErrorFor(RouteServiceException()))
+    }
+
+    @Test
+    fun unreachableDestinationException() {
+        assertEquals(RoutePlanningError.UNREACHABLE, routeErrorFor(UnreachableDestinationException()))
     }
 
     @Test

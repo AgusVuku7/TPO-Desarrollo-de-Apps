@@ -5,3 +5,6 @@ package com.chargeroute.app.domain.model
 class NoConnectionException : Exception()
 
 class RouteServiceException : Exception()
+
+// Con las estaciones encontradas sobre la ruta no se llega a destino: no se arma un viaje que no se puede hacer
+class UnreachableDestinationException : Exception()

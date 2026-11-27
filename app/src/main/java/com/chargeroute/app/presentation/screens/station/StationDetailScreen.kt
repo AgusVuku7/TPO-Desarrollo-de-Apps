@@ -1,6 +1,7 @@
 package com.chargeroute.app.presentation.screens.station
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,6 +66,9 @@ import java.util.Locale
 fun StationDetailScreen(
     stop: TripStop?,
     vehicle: Vehicle?,
+    // Solo se puede cargar la bateria real si se llego desde la navegacion (estando en el cargador).
+    // Desde el resumen o Mis cargadores es solo consulta y no toca el viaje
+    isAtCharger: Boolean,
     onUpdateBatteryAfterCharge: (Int) -> Unit,
     onNavigateToCharger: () -> Unit,
     onBackClick: () -> Unit
@@ -78,16 +82,20 @@ fun StationDetailScreen(
     val station = stop.station
     var simulatedBatteryAfterCharge by rememberSaveable(stop.id) { mutableIntStateOf(stop.departureBatteryPercent) }
 
+    val leaveScreen = {
+        if (isAtCharger) onUpdateBatteryAfterCharge(simulatedBatteryAfterCharge)
+        onBackClick()
+    }
+    // El atras del sistema hace lo mismo que la flecha
+    BackHandler(onBack = leaveScreen)
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {},
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                            onUpdateBatteryAfterCharge(simulatedBatteryAfterCharge)
-                            onBackClick()
-                        },
+                        onClick = leaveScreen,
                         modifier = Modifier.size(48.dp) // RNF02
                     ) {
                         Icon(
@@ -119,7 +127,7 @@ fun StationDetailScreen(
                 Box(modifier = Modifier.padding(16.dp)) {
                     Button(
                         onClick = {
-                            onUpdateBatteryAfterCharge(simulatedBatteryAfterCharge)
+                            if (isAtCharger) onUpdateBatteryAfterCharge(simulatedBatteryAfterCharge)
                             onNavigateToCharger()
                         },
                         modifier = Modifier
@@ -178,12 +186,14 @@ fun StationDetailScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            BatteryAfterChargeCard(
-                batteryPercent = simulatedBatteryAfterCharge,
-                onBatteryChange = { simulatedBatteryAfterCharge = it }
-            )
+            if (isAtCharger) {
+                BatteryAfterChargeCard(
+                    batteryPercent = simulatedBatteryAfterCharge,
+                    onBatteryChange = { simulatedBatteryAfterCharge = it }
+                )
 
-            Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+            }
 
             DisclaimerRow()
 
@@ -451,6 +461,7 @@ private fun StationDetailScreenPreview() {
         StationDetailScreen(
             stop = PreviewData.stop,
             vehicle = PreviewData.vehicle,
+            isAtCharger = true,
             onUpdateBatteryAfterCharge = {},
             onNavigateToCharger = {},
             onBackClick = {}
@@ -465,6 +476,7 @@ private fun StationDetailScreenDarkPreview() {
         StationDetailScreen(
             stop = PreviewData.stop,
             vehicle = PreviewData.vehicle,
+            isAtCharger = true,
             onUpdateBatteryAfterCharge = {},
             onNavigateToCharger = {},
             onBackClick = {}
